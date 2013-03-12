@@ -1,0 +1,3 @@
+dirs.lo: ../../../src/libopenflow/dirs.c ../../config.h
+
+../../config.h:

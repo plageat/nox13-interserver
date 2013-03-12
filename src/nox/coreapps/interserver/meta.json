@@ -1,0 +1,13 @@
+{
+    "components": [
+        {
+            "name": "interserver" ,
+            "library": "interserver" 
+        },
+		
+		{
+            "name": "request_processor" ,
+            "library": "request_processor" 
+        }
+    ]
+}

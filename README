@@ -1,0 +1,23 @@
+Getting Started
+---------------
+
+Requires: libmicrohttpd >= 0.9.22 (in /usr/local/lib)
+
+To build, run the following commands in the nox13 directory:
+
+    ./boot.sh
+    mkdir build
+    cd build
+    ../configure --with-python=no
+    make
+
+
+To start the controller with http server, run the following commands:
+
+    cd build/src
+    ./nox-core -i ptcp:<port> interserver request_processor [interact_components_list]
+
+This will start the controller, listening on the given port for switch
+connetions. For a complete list of options, use the --help argument.
+
+

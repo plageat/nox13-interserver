@@ -77,9 +77,8 @@ namespace vigil
 	{
 		request_arguments args;
 		json_object* t = NULL;
-		std::string th_msg;
+		std::string th_msg;	// for exception
 		std::string value;
-		boost::any ret_value;
 		
 		std::vector<std::string>::const_iterator i1 = keys.begin();
 		std::vector<std::string>::const_iterator i2 = keys.end();
@@ -95,21 +94,7 @@ namespace vigil
 				th_msg += '\n';
 			}
 			value = t->get_string(true);
-			//____________________________________
-			// and now many many many many if's :-(
-			while(true)
-			{
-				/* if(*i1 == "some string")
-				{
-					operations with value 
-					ret_value = ...;
-					break;
-				}*/
-				ret_value = boost::any();	// good clear?
-				break;
-			};
-			//____________________________________
-			args[*i1] = ret_value;
+			args[*i1] = value;
 		}
 		
 		if(!th_msg.empty())

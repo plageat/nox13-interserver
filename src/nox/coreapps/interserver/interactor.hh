@@ -8,7 +8,7 @@
 #include "nox.hh"
 
 #include <boost/shared_ptr.hpp>
-#include <boost/any.hpp>
+//#include <boost/any.hpp>
 #include <boost/noncopyable.hpp>
 #include <vector>
 #include <string>
@@ -19,8 +19,7 @@
 namespace vigil
 {
   using namespace vigil::json;
-  using namespace vigil::container; 
-  using boost::any_cast;
+  using namespace vigil::container;  
   /*
   template<typename T>
   class SimpleSingleton : boost::noncopyable
@@ -36,7 +35,7 @@ namespace vigil
 		~SimpleSingleton();
   };*/
   
-  typedef std::map<std::string,boost::any> request_arguments;
+  typedef std::map<std::string, std::string> request_arguments;
   
   // abstract base class for all components in interact request scheme
   class Interactor

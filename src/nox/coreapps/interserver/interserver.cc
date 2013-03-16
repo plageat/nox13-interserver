@@ -4,155 +4,39 @@
 #include "vlog.hh"
 #include "hash_map.hh"
 #include <boost/bind.hpp>
-	
+#include <stdlib.h>
+#include <stdio.h>	
 namespace vigil
 {	
 	using namespace vigil::container;    
 	using namespace std;
 	 
 	static Vlog_module lg("interserver");
-	static Vlog_module lg_lib("microhttpd");
+	static Vlog_module lg_lib("cpp-netlib");
 	
-	static void request_completed(void *cls, MHD_Connection * con, void **con_cls, MHD_RequestTerminationCode code)
+	void http_handler::log(...)
 	{
-		//lg_lib.dbg("!!!!!!!!!!!!Calling Request completed");
-		Http_connection_info* con_inf = (Http_connection_info*)*con_cls;
-		if(con_inf != NULL)
-			delete con_inf;
-		con_inf = NULL;
-		*con_cls = NULL;
+		// empty
 	}
 	
-	static int send_back(MHD_Connection* con, const std::string& data, int status_code)
+	void http_handler::operator() (server::request const &request, server::response &response) 
 	{
+		lg_lib.dbg("Working url handler");
 		
-		MHD_Response * response;
-		response = MHD_create_response_from_data(data.size(),(void*)data.c_str(),MHD_NO,MHD_YES);
-		if(!response)
-			return MHD_NO;
-		//lg_lib.dbg("!!!!!!!!!!!!Calling libmicrohttpd");
-		//lg_lib.dbg(data.c_str());
-		int ret_val = MHD_queue_response(con,status_code,response);
-		MHD_destroy_response(response);
+		Interserver::Request_process_Info *post_info = &Interserver::_rp_info;
 		
-		return ret_val;
-	}
-	
-	static int get_url_args(void *cls, MHD_ValueKind kind, const char *key , const char* value)
-	{
-		lg_lib.dbg("getting url arguments...%s",key);
-		map<string, string> * url_args = static_cast<map<string, string> *>(cls);
-
-		if (url_args->find(key) == url_args->end()) 
-		{
-			if (!value)
-				(*url_args)[key] = "";
-			else 
-				(*url_args)[key] = value;
-		}
-		return MHD_YES;
-	}
-	
-	static int get_post_data(void *cls, enum MHD_ValueKind kind, const char *key,
-									const char *filename, const char* content_type, 
-									const char* transfer_encoding, const char *data,
-									long long unsigned int off, unsigned int size)
-	{
-		map<string, string> * post_data = static_cast<map<string, string> *>(cls);
-
-		if (post_data->find(key) == post_data->end()) 
-		{
-			if (!data)
-			{
-				(*post_data)[key] = "";
-			}	
-			else 
-			{
-				(*post_data)[key] = std::string(data,size);
-			}
-		}
-		return MHD_YES;
-	}
-		// correct static issue
-	 int url_handler (void *cls,
-			struct MHD_Connection *connection,
-				const char *url,
-					const char *method,
-						const char *version,
-							const char *upload_data, unsigned int *upload_data_size, void **ptr)
-	{
-		lg_lib.dbg("Calling url_handler succesfully");
+		post_info->_request_msg._url = destination(request);
+		post_info->_request_msg._post_data = body(request);
 		
-		Http_connection_info *con_inf = NULL;
-
-		Interserver::Request_process_Info *post_info = &Interserver::_rp_info;  //Interserver::Request_process_Info *)cls;//&(((Interserver*)cls)->_rp_info);
-		
-		if(*ptr == NULL)	// incoming 
-		{
-			con_inf = new Http_connection_info;
-			if(con_inf == NULL)
-				return MHD_NO;
-			if(strcmp(method,"GET") == 0)
-				con_inf->_connection_type = e_READ;
-			else	// for POST, PUT and DELETE the same
-			{
-				con_inf->_connection_type = e_MODIFY; 
-				con_inf->_pp = MHD_create_post_processor(connection, POST_BUFFER_SIZE ,
-																	get_post_data, (void*) &post_info->_request_msg._post_data);
-				if(con_inf->_pp == NULL)
-				{
-					lg_lib.dbg("Error of post processor");
-					return MHD_NO;
-				}	
-			}
-			
-			*ptr = (void*)con_inf;
-			
-			return MHD_YES;
-		}
-		// connection exist
-		if(strcmp(method,"GET") != 0)
-		{
-			con_inf = (Http_connection_info*)*ptr;
-			if(*upload_data_size != 0)
-				MHD_post_process(con_inf->_pp, upload_data, *upload_data_size);
-			*upload_data_size = 0;
-		}
-		
-		post_info->_request_msg._url = url;
-		post_info->_request_msg._method = method;
-		post_info->_request_msg._version = version;
-		
-		MHD_get_connection_values (connection, MHD_GET_ARGUMENT_KIND, get_url_args, &post_info->_request_msg._url_args);
-		//MHD_get_connection_values (connection, MHD_GET_ARGUMENT_KIND, get_url_args, &post_info->_request_msg._url_args);
-		//post_info->_request_msg.debug();
-
 		post_info->_accept_post = true;
-		// give some data and response to requester
-
-		while(post_info->_accept_response != true); // fail
-		//lg_lib.dbg("Good, accept responce handled!!!");
+		
+		while(post_info->_accept_response != true);
 		
 		post_info->_accept_response = false;
 		
-		std::string s = post_info->_response; 
-		//return 
-		return send_back(connection,s,MHD_HTTP_OK); // bag or new version change
-		
 		post_info->_request_msg.clear();
-		
-		return MHD_YES;
-	}
-	
-	Http_connection_info::Http_connection_info() : _connection_type(e_READ),_pp(NULL)
-	{
-	}
-	
-	Http_connection_info::~Http_connection_info()
-	{
-		if(_pp != NULL)
-			MHD_destroy_post_processor(_pp);
-		_pp = NULL;
+		response = server::response::stock_reply(
+            server::response::ok, post_info->_response);
 	}
 	
 	//_________________________________________________________________________
@@ -161,7 +45,7 @@ namespace vigil
 	
 	Interserver::~Interserver()
 	{
-		MHD_stop_daemon(_daemon);
+		_server->stop();
 	}
 	
 	void Interserver::configure(const Configuration* config)
@@ -177,18 +61,18 @@ namespace vigil
 		hash_map<string, string>::const_iterator i;
 		i = argmap.find("port");
 		if (i != argmap.end())
-			_port = (unsigned short) atoi(i->second.c_str());
+			_port = i->second.c_str();
 	}
 	
 	void Interserver::install()
 	{
-		this->_daemon = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY | MHD_USE_DEBUG | MHD_USE_POLL,
-			_port, 0, 0, &url_handler,
-			(void*)NULL, MHD_OPTION_NOTIFY_COMPLETED, request_completed, NULL, MHD_OPTION_END);
-		if(this->_daemon == 0)
-			lg.dbg("Cannot start url handler, some problems...");
-			
-		start(boost::bind(&Interserver::run, this));
+		http_handler handler;
+		_server.reset(new server("0.0.0.0", _port, handler) );
+
+		boost::thread t(boost::bind(&server::run,_server.get() ));
+		t.detach();
+		
+		start(boost::bind(&Interserver::listen_state, this));
 	}
 	
 	void Interserver::getInstance(const container::Context* ctxt, 
@@ -199,7 +83,7 @@ namespace vigil
 					(typeid(Interserver).name())));
 	}
 	
-	void Interserver::run()
+	void Interserver::listen_state()
 	{
 		// request processing here?
 		struct timeval wait;	// some recoding?

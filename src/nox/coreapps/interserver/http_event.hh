@@ -13,11 +13,9 @@ namespace vigil
   struct Request_msg
   {
 	std::string _url;
-	std::string _method;
-	std::string _version;
-	std::string _upload_data;
-	std::map<std::string,std::string> _url_args;
-	std::map<std::string,std::string> _post_data;
+	//std::string _method;
+	//std::string _version;
+	std::string _post_data;
 	
 	void debug() const;
 	

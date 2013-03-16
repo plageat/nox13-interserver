@@ -138,7 +138,7 @@ namespace vigil
 				if(me.get_request()._post_data.size() == 0)
 					throw std::invalid_argument("POST data not found!\n");
 			
-				std::string post_data = me.get_request()._post_data.begin()->first;
+				std::string post_data = me.get_request()._post_data;
 				ssize_t len = post_data.size();
 			
 				json_object* a = new json_object((const uint8_t*)post_data.c_str(),len);

@@ -75,8 +75,8 @@ namespace vigil
 	
 	void Interserver::configure(const Configuration* config)
 	{
-		register_event(Http_request_event::static_get_name());
-		register_event(Http_response_event::static_get_name());
+		//register_event(Http_request_event::static_get_name());
+		//register_event(Http_response_event::static_get_name());
 		
 		register_handler<Http_response_event>
 			(boost::bind(&Interserver::response_handler, this, _1));
@@ -88,6 +88,7 @@ namespace vigil
 		i = argmap.find("port");
 		if (i != argmap.end())
 			_port = i->second.c_str();
+
 	}
 	
 	void Interserver::install()

@@ -29,6 +29,9 @@ namespace vigil
 		
 		f = boost::bind(&InteractorCreator<Inter_sw_config_setter>::create);
 		this->_interactsFact.register_object(Inter_sw_config_setter::name(), f);
+		
+		f = boost::bind(&InteractorCreator<Inter_features_request>::create);
+		this->_interactsFact.register_object(Inter_features_request::name(), f);
 	
 	}
 	

@@ -34,11 +34,30 @@ namespace vigil
 		return CONTINUE;
 	}
 	
+	Disposition Facade_answer::handle_features_reply(const Event& e)
+	{
+		std::string response;
+		Switch_features_reply proc;
+		
+		
+		const Ofp_msg_event& pi = assert_cast<const Ofp_msg_event&>(e);
+		struct ofl_msg_features_reply *repl = (struct ofl_msg_features_reply *)**pi.msg;
+		
+		response += proc.extract_features(repl);
+		response += proc.extract_capabilities(repl->capabilities);
+		
+		acceptResponse(response);
+		
+		return CONTINUE;
+	}
+	
 	void Facade_answer::install()
 	{
 		//to add all answers from switch 
 		register_handler(Ofp_msg_event::get_name(OFPT_GET_CONFIG_REPLY), 
 							boost::bind(&Facade_answer::handle_sw_config_reply, this, _1) );
+		register_handler(Ofp_msg_event::get_name(OFPT_FEATURES_REPLY), 
+							boost::bind(&Facade_answer::handle_features_reply, this, _1) );
 	}
 	
 	void Facade_answer::getInstance(const container::Context* ctxt, 

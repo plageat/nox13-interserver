@@ -34,5 +34,33 @@ namespace vigil
 		return sbuf.str();
 	}
 	
+	std::string Switch_features_reply::extract_features( struct ofl_msg_features_reply *repl)
+	{
+		std::stringstream sbuf;
+		
+		sbuf << "Datapathid is:	" << repl->datapath_id << std::endl;
+		sbuf << "Max packet buffered at once: " << (uint32_t)repl->n_buffers << std::endl;
+		sbuf << "Number of tables supported: "<< (uint32_t)repl->n_tables << std::endl;
+		sbuf << "Auxiliary ID: " << (uint32_t)repl->auxiliary_id << std::endl;
+		
+		return sbuf.str();
+		
+	}
 	
+	std::string Switch_features_reply::extract_capabilities(uint32_t capabilities)
+	{
+		std::stringstream sbuf;
+		
+		sbuf << "Supported capabilities are:\n";
+		
+		sbuf << "flow statistics: " << (capabilities & OFPC_FLOW_STATS ? "yes" : "no") << std::endl;
+		sbuf << "table statistics: " << (capabilities & OFPC_TABLE_STATS ? "yes" : "no") << std::endl;
+		sbuf << "port statistics: " << (capabilities & OFPC_PORT_STATS ? "yes" : "no") << std::endl;
+		sbuf << "group statistics: " << (capabilities & OFPC_GROUP_STATS ? "yes" : "no") << std::endl;
+		sbuf << "reasemble ip fragments: " << (capabilities & OFPC_IP_REASM ? "yes" : "no") << std::endl;
+		sbuf << "queue statistics: " << (capabilities & OFPC_QUEUE_STATS ? "yes" : "no") << std::endl;
+		sbuf << "block looping ports: " << (capabilities & OFPC_PORT_BLOCKED ? "yes" : "no") << std::endl;
+		
+		return sbuf.str();
+	}
 };

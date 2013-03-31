@@ -74,4 +74,29 @@ namespace vigil
 		
 		return (ofl_msg_header *)msg;
 	}
+	//=========================================
+	enum ofp_type Inter_features_request::name()
+	{
+		return OFPT_FEATURES_REQUEST;
+	}
+	
+	bool Inter_features_request::is_modify() const
+	{
+		return false;
+	}
+	
+	std::vector<std::string> Inter_features_request::arg_requires()
+	{
+		std::vector<std::string> args;
+		
+		return args;
+	}
+	
+	struct ofl_msg_header * Inter_features_request::request_msg_creator(const request_arguments& args)
+	{
+		struct ofl_msg_header*  msg = new ofl_msg_header;
+		msg->type = OFPT_FEATURES_REQUEST;
+		
+		return msg;
+	}
 };

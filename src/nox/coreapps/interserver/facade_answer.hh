@@ -27,6 +27,8 @@ namespace vigil
 		
 		//here to add handlers for switch answers
 		Disposition handle_sw_config_reply(const Event& e);
+		
+		Disposition handle_features_reply(const Event& e);
   };
   
 };

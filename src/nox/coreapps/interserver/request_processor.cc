@@ -56,6 +56,9 @@ namespace vigil
 								std::string("get_sw_config"),OFPT_GET_CONFIG_REQUEST) );
 			type_hash.insert(type_saver::value_type(
 								std::string("set_sw_config"),OFPT_SET_CONFIG) );
+			type_hash.insert(type_saver::value_type(
+								std::string("features_request"),OFPT_FEATURES_REQUEST) );
+								
 			init = true;
 		}
 

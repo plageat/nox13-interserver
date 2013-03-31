@@ -75,7 +75,7 @@ namespace vigil
 	{
 		bool _accept_post;
 		Request_msg _request_msg;
-		std::string _response;
+		Return_msg _response;
 		boost::timed_mutex _http_sync;
 	}	_rp_info;
 	

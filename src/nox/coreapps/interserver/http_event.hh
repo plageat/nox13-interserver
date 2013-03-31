@@ -1,6 +1,7 @@
 #ifndef HTTP_EVENT_HH__
 #define HTTP_EVENT_HH__
 
+#include <exception>
 #include <boost/noncopyable.hpp>
 #include <map>
 #include "component.hh"
@@ -42,12 +43,37 @@ namespace vigil
 	const Request_msg& get_request() const;
   };  
   
+  // some of http status codes
+  enum http_status_type 
+  {
+	  e_ok = 200,
+	  e_created = 201,
+	  e_not_modified = 304,
+	  e_bad_request = 400,
+	  e_not_found = 404,
+	  e_not_supported = 405,
+	  e_internal_server_error = 500,
+	  e_not_implemented = 501,
+	  e_bad_gateway = 502,
+	  e_service_unavailable = 503
+   } ;
+   
+   struct Return_msg
+   {
+	   http_status_type _type;
+	   std::string _response;
+	   
+	   Return_msg();
+	   Return_msg(const std::string&, enum http_status_type );
+   } ;
+  
   class Http_response_event : public Event
   {
 	private:
-	  std::string _response;
+		struct Return_msg _status;
 	public:
-	  Http_response_event(const std::string& res);
+	  Http_response_event(const std::string& res, enum http_status_type type=e_ok);
+	  Http_response_event(const Return_msg&);
 	  ~Http_response_event() {};
 	  Http_response_event() : Event(static_get_name())
 	  { }
@@ -56,7 +82,20 @@ namespace vigil
 		  return "Http_response_event";
 	  }
 	  
-	  const std::string& get_response() const;
+	  const Return_msg& get_response() const;
+  };
+  
+  
+  class http_request_error : public std::runtime_error
+  {
+	enum http_status_type _type;
+	
+	public:
+		http_request_error(const std::string&, enum http_status_type );
+		
+		Return_msg construct_return() const;
+		
+		virtual ~http_request_error() throw();
   };
   
 };

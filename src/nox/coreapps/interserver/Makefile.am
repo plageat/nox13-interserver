@@ -11,10 +11,10 @@ pkglib_LTLIBRARIES =		\
 	msg_resolver.la	\
 	facade_answer.la
 
-interserver_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/src/nox -I. 
+interserver_la_CPPFLAGS = -I/usr/local/include/cpp-netlib  $(AM_CPPFLAGS) -I$(top_srcdir)/src/nox -I. 
 interserver_la_SOURCES = interserver.cc http_event.cc
-interserver_la_LIBADD = -lmicrohttpd
-interserver_la_LDFLAGS = -module -export-dynamic -L/usr/local/lib
+interserver_la_LIBADD = -lboost_system -lboost_regex -lboost_date_time -lboost_thread -lpthread
+interserver_la_LDFLAGS = -module -export-dynamic -L/usr/lib
 
 request_processor_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/src/nox -I. 
 request_processor_la_SOURCES = request_processor.cc http_event.cc interact_event.cc

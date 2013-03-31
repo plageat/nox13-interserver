@@ -27,7 +27,7 @@ namespace vigil
 		Disposition datapath_leave_handler(const Event& e);
 		void dpid_check(const datapathid& id);
 		
-		void postResponse(std::string);
+		void postResponse(Return_msg);
 		
 		Request_processor(const Context* c, const json_object* node) : Component(c) 
 		{  }	

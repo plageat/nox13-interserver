@@ -38,22 +38,29 @@ namespace vigil
 		
 		bool ret = post_info->_http_sync.timed_lock(timeout); 
 		std::string res;
+		http_status_type res_type;
 		if( ret == true)	
-			res = post_info->_response;
+		{
+			res = post_info->_response._response;
+			res_type = post_info->_response._type;
+		}	
 		else
+		{
+			res_type = e_service_unavailable;
 			res = "Datapathid not responses\n";
+		}
 
 		post_info->_http_sync.unlock();	
 		post_info->_request_msg.clear();
 		response = server::response::stock_reply(
-            server::response::ok, res);
+            (server::response::status_type)res_type, res);
 			
 		lg_lib.dbg("Closing handler");
 	}
 	
 	//_________________________________________________________________________
 	
-	Interserver::Request_process_Info Interserver::_rp_info = {false,Request_msg(),std::string()};
+	Interserver::Request_process_Info Interserver::_rp_info = {false,Request_msg(),Return_msg()};
 	
 	Interserver::~Interserver()
 	{

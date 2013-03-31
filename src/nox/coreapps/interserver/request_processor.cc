@@ -19,7 +19,7 @@ namespace vigil
 	 
 	static Vlog_module lg("request_processor");
 
-	void Request_processor::postResponse(std::string r)
+	void Request_processor::postResponse(Return_msg r)
 	{
 		post(new Http_response_event(r));
 	}
@@ -28,14 +28,14 @@ namespace vigil
 	{
 		json_object* t = json::get_dict_value(jobj,std::string("dpid"));
 		if(t == NULL)
-			throw std::invalid_argument("POST data must have dpid field!\n");
+			throw http_request_error("POST data must have dpid field!\n",e_bad_request);
 			
 		std::string str_t = t->get_string(true);
 		
 		int id = 0;
 		id = atoi(str_t.c_str());
 		if(!id)
-			throw std::invalid_argument("POST data containes invalid dpid value\n");
+			throw http_request_error("POST data containes invalid dpid value\n",e_bad_request);
 		
 		delete t;
 		
@@ -59,7 +59,7 @@ namespace vigil
 
 		json_object* t = json::get_dict_value(jobj,std::string("type"));
 		if(t == NULL)
-			throw std::invalid_argument("POST data must have type field!\n");
+			throw http_request_error("POST data must have type field!\n",e_bad_request);
 			
 		std::string str_t = t->get_string(true);
 		
@@ -68,7 +68,7 @@ namespace vigil
 		type_saver::iterator i;
 		
 		if((i = type_hash.find(str_t)) == type_hash.end() )
-			throw std::invalid_argument("POST data containes invalid type field\n");
+			throw http_request_error("POST data containes invalid type field\n",e_bad_request);
 
 		return i->second;
 	}
@@ -101,7 +101,7 @@ namespace vigil
 		{
 			std::string s("Missing next fields in POST request:\n");
 			s += th_msg;
-			throw std::invalid_argument( s.c_str() );
+			throw http_request_error( s.c_str() ,e_bad_request);
 		}
 	
 		return args;
@@ -114,7 +114,7 @@ namespace vigil
 			std::string th_msg("Switch with datapathid ");
 			th_msg += id.string();
 			th_msg += " is not exist\n";
-			throw std::invalid_argument(th_msg.c_str());
+			throw http_request_error(th_msg.c_str(),e_not_found);
 		}
 	}
 	
@@ -128,7 +128,6 @@ namespace vigil
 		me.get_request().debug();
 		
 		//std::string response;
-		// working here no
 		
 		if( me.get_request()._url == "/switches/info" )
 		{
@@ -136,14 +135,14 @@ namespace vigil
 			{
 				enum ofp_type tp;
 				if(me.get_request()._post_data.size() == 0)
-					throw std::invalid_argument("POST data not found!\n");
+					throw http_request_error("POST data not found!\n",e_not_found);
 			
 				std::string post_data = me.get_request()._post_data;
 				ssize_t len = post_data.size();
 			
 				json_object* a = new json_object((const uint8_t*)post_data.c_str(),len);
 				if(a->type == json_object::JSONT_NULL)
-					throw std::invalid_argument("Invalid POST data format, must be JSON\n");
+					throw http_request_error("Invalid POST data format, must be JSON\n",e_bad_request);
 				
 				Msg_resolver* reslv;
 			
@@ -153,7 +152,7 @@ namespace vigil
 				// step 1
 				bool inited = reslv->init_interactor(tp);
 				if(!inited)
-					std::logic_error("Requested type is not curretly supported by Interserver\n" );
+					http_request_error("Requested type is not curretly supported by Interserver\n" ,e_not_supported);
 				// step 2
 				std::vector<std::string> keys = reslv->give_arguments();
 				request_arguments args;
@@ -164,16 +163,20 @@ namespace vigil
 				dpid_check(did);
 				int sendGood = reslv->resolve_request(did,args);
 				if(sendGood != 0)
-					throw std::runtime_error("nox_core sending interactor msg error\n");
+					throw http_request_error("nox_core sending interactor msg error\n",e_internal_server_error);
+			}
+			catch(http_request_error& e)
+			{
+				postResponse(e.construct_return());
 			}
 			catch(std::exception &e)
 			{
-				postResponse( e.what() );
+				postResponse( Return_msg(std::string(e.what()),e_internal_server_error) );
 			}
 			
 		}
 		else
-			postResponse( "Invalid path for NOX interserver source\n" );
+			postResponse( Return_msg(std::string("Invalid path for NOX interserver source\n"),e_not_implemented ));
 		/*
 		if( me.get_request()._url == "/switches" && me.get_request()._method == "GET")
 		{
@@ -203,7 +206,7 @@ namespace vigil
 	{
 		const Interact_event& pi = assert_cast<const Interact_event&>(e);
 		
-		postResponse( pi.get_reply() );
+		postResponse( Return_msg(pi.get_reply(),e_ok ) );
 		
 		return CONTINUE;
 	}

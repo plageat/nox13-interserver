@@ -5,10 +5,9 @@
 #undef _GLIBCXX_CONCEPT_CHECKS
 /** Server port number 
  */
-#define INTERSERVER_PORT "4695"
+#define INTERSERVER_PORT "5678"
 
-#define POST_BUFFER_SIZE 1024
-
+#include <boost/thread/mutex.hpp>
 #include "http_event.hh"
 #include <boost/noncopyable.hpp>
 #include <map>
@@ -67,15 +66,17 @@ namespace vigil
 	
 	Disposition response_handler(const Event&);
 	
+	Disposition shutdown_handler(const Event&);
+	
 	private:
 	// used to interact with request handler
 	// ???
 	static struct Request_process_Info
 	{
-		volatile bool _accept_post;
+		bool _accept_post;
 		Request_msg _request_msg;
-		volatile bool _accept_response;
 		std::string _response;
+		boost::timed_mutex _http_sync;
 	}	_rp_info;
 	
   };

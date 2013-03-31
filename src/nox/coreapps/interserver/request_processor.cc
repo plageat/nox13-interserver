@@ -35,7 +35,7 @@ namespace vigil
 		int id = 0;
 		id = atoi(str_t.c_str());
 		if(!id)
-			throw std::invalid_argument("POST data containes invalid dpid value");
+			throw std::invalid_argument("POST data containes invalid dpid value\n");
 		
 		delete t;
 		
@@ -113,7 +113,7 @@ namespace vigil
 		{
 			std::string th_msg("Switch with datapathid ");
 			th_msg += id.string();
-			th_msg += " is not exist";
+			th_msg += " is not exist\n";
 			throw std::invalid_argument(th_msg.c_str());
 		}
 	}
@@ -153,7 +153,7 @@ namespace vigil
 				// step 1
 				bool inited = reslv->init_interactor(tp);
 				if(!inited)
-					std::logic_error("Requested type is not curretly supported by Interserver" );
+					std::logic_error("Requested type is not curretly supported by Interserver\n" );
 				// step 2
 				std::vector<std::string> keys = reslv->give_arguments();
 				request_arguments args;
@@ -164,7 +164,7 @@ namespace vigil
 				dpid_check(did);
 				int sendGood = reslv->resolve_request(did,args);
 				if(sendGood != 0)
-					throw std::runtime_error("nox_core sending interactor msg error");
+					throw std::runtime_error("nox_core sending interactor msg error\n");
 			}
 			catch(std::exception &e)
 			{
@@ -172,7 +172,8 @@ namespace vigil
 			}
 			
 		}
-		
+		else
+			postResponse( "Invalid path for NOX interserver source\n" );
 		/*
 		if( me.get_request()._url == "/switches" && me.get_request()._method == "GET")
 		{

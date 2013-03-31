@@ -1,5 +1,7 @@
 #include "interserver.hh"
 
+
+#include "shutdown-event.hh"
 #include "assert.hh"
 #include "vlog.hh"
 #include "hash_map.hh"
@@ -7,6 +9,7 @@
 #include <stdlib.h>
 #include <stdio.h>	
 namespace vigil
+
 {	
 	using namespace vigil::container;    
 	using namespace std;
@@ -28,24 +31,39 @@ namespace vigil
 		post_info->_request_msg._url = destination(request);
 		post_info->_request_msg._post_data = body(request);
 		
-		post_info->_accept_post = true;
+		post_info->_http_sync.lock();	
+		post_info->_accept_post = true;		
 		
-		while(post_info->_accept_response != true);
+		boost::system_time timeout = boost::get_system_time() + boost::posix_time::seconds(10);
 		
-		post_info->_accept_response = false;
-		
+		bool ret = post_info->_http_sync.timed_lock(timeout); 
+		std::string res;
+		if( ret == true)	
+			res = post_info->_response;
+		else
+			res = "Datapathid not responses\n";
+
+		post_info->_http_sync.unlock();	
 		post_info->_request_msg.clear();
 		response = server::response::stock_reply(
-            server::response::ok, post_info->_response);
+            server::response::ok, res);
+			
+		lg_lib.dbg("Closing handler");
 	}
 	
 	//_________________________________________________________________________
 	
-	Interserver::Request_process_Info Interserver::_rp_info = {false,Request_msg(),false,std::string()};
+	Interserver::Request_process_Info Interserver::_rp_info = {false,Request_msg(),std::string()};
 	
 	Interserver::~Interserver()
 	{
 		_server->stop();
+	}
+	
+	Disposition Interserver::shutdown_handler(const Event&)
+	{
+		_server->stop();
+		return CONTINUE;
 	}
 	
 	void Interserver::configure(const Configuration* config)
@@ -55,7 +73,8 @@ namespace vigil
 		
 		register_handler<Http_response_event>
 			(boost::bind(&Interserver::response_handler, this, _1));
-		
+		register_handler<Shutdown_event> 
+                                  (boost::bind(&Interserver::shutdown_handler, this, _1));
 		 //Get commandline arguments
 		const hash_map<string, string> argmap = config->get_arguments_list();
 		hash_map<string, string>::const_iterator i;
@@ -67,9 +86,14 @@ namespace vigil
 	void Interserver::install()
 	{
 		http_handler handler;
-		_server.reset(new server("0.0.0.0", _port, handler) );
-
+		
+		_server.reset(new server(boost::network::http::_address= "0.0.0.0",
+							boost::network::http::_port=_port, 
+							boost::network::http::_handler=handler, 
+							boost::network::http::_reuse_address=true) );
+		
 		boost::thread t(boost::bind(&server::run,_server.get() ));
+		
 		t.detach();
 		
 		start(boost::bind(&Interserver::listen_state, this));
@@ -85,7 +109,6 @@ namespace vigil
 	
 	void Interserver::listen_state()
 	{
-		// request processing here?
 		struct timeval wait;	// some recoding?
 		wait.tv_sec = 0;
 		wait.tv_usec = 1;
@@ -95,7 +118,6 @@ namespace vigil
 			co_block();
 			if(_rp_info._accept_post == true)
 			{
-				//lg.dbg("cycle is working");
 				_rp_info._accept_post = false;
 				post(new Http_request_event(_rp_info._request_msg));
 			}
@@ -104,12 +126,12 @@ namespace vigil
 	
 	Disposition Interserver::response_handler(const Event& e)
 	{
-		const Http_response_event& me = assert_cast<const Http_response_event&>(e); //dynamic_cast<Http_response_event&>(const_cast<Event&>(e));
+		const Http_response_event& me = assert_cast<const Http_response_event&>(e);
 		this->_rp_info._response = me.get_response();
-		this->_rp_info._accept_response = true;
-	
-		lg.dbg("Interserver::response_handler working:");
-		std::cout << "***Responsed data is: \n" <<  me.get_response() << std::endl;
+		this->_rp_info._http_sync.unlock();
+		
+		//lg.dbg("Interserver::response_handler working:");
+		//std::cout << "***Responsed data is: \n" <<  me.get_response() << std::endl;
 		
 		return CONTINUE;
 	}

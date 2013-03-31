@@ -14,10 +14,18 @@ namespace vigil
 	
 		std::vector<std::string> arg_requires();
 		struct ofl_msg_header * request_msg_creator(const request_arguments& );
-		
+		bool is_modify() const;
 		static enum ofp_type name(); 
   };
   
+  class Inter_sw_config_setter : public Interactor
+  {
+	public:
+		std::vector<std::string> arg_requires();
+		struct ofl_msg_header * request_msg_creator(const request_arguments& );
+		bool is_modify() const;
+		static enum ofp_type name(); 
+  };
 };
 
   

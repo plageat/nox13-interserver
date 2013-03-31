@@ -34,7 +34,7 @@ namespace vigil
 	
 		~Request_processor() {};
 	
-		void configure(const Configuration* c) { };
+		void configure(const Configuration* c);
 	
 		void install();
 

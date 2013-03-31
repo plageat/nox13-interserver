@@ -54,6 +54,8 @@ namespace vigil
 			// to add key and value for type			
 			type_hash.insert(type_saver::value_type(
 								std::string("get_sw_config"),OFPT_GET_CONFIG_REQUEST) );
+			type_hash.insert(type_saver::value_type(
+								std::string("set_sw_config"),OFPT_SET_CONFIG) );
 			init = true;
 		}
 
@@ -82,16 +84,16 @@ namespace vigil
 		
 		std::vector<std::string>::const_iterator i1 = keys.begin();
 		std::vector<std::string>::const_iterator i2 = keys.end();
-		
+
 		for(i1; i1 != i2; ++i1)
 		{
-	
 			t = json::get_dict_value(jobj,*i1);
 			 
 			if(t == NULL)
 			{
 				th_msg += *i1;
 				th_msg += '\n';
+				continue;
 			}
 			value = t->get_string(true);
 			args[*i1] = value;
@@ -159,11 +161,16 @@ namespace vigil
 				if(keys.size() != 0)
 					args = find_args(a,keys);
 				// step 3
+				bool mod_req = reslv->is_modify();
+				// step 4
 				datapathid did = interpret_dpid(a);
 				dpid_check(did);
 				int sendGood = reslv->resolve_request(did,args);
 				if(sendGood != 0)
 					throw http_request_error("nox_core sending interactor msg error\n",e_internal_server_error);
+				// send reply now if modify request 
+				if(mod_req)
+					postResponse( Return_msg(std::string("Accepted\n"),e_ok) );
 			}
 			catch(http_request_error& e)
 			{
@@ -226,6 +233,12 @@ namespace vigil
 		_dpids.erase( std::find(_dpids.begin(),_dpids.end(),info.datapath_id) );
 		
 		return CONTINUE;
+	}
+	
+	void Request_processor::configure(const Configuration* c)
+	{
+		register_event(Http_request_event::static_get_name());
+		register_event(Http_response_event::static_get_name());
 	}
 	
 	void Request_processor::install()

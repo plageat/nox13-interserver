@@ -32,9 +32,11 @@ namespace vigil
 									vigil::Msg_resolver*& scpa);
 		// msg_resolver main logic
 		
-		bool init_interactor(enum ofp_type);
+		bool init_interactor(enum ofp_type);	// must be call first!
 		std::vector<std::string> give_arguments() const;
-		int resolve_request(const datapathid& did, const request_arguments&);
+		bool is_modify() const;
+		int resolve_request(const datapathid& did, const request_arguments&);	// must be call last!
+		
   };
   
 };

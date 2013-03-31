@@ -25,9 +25,11 @@ namespace vigil
 		boost::function< Interactor* () > f;
 		// to register 
 		f = boost::bind(&InteractorCreator<Inter_sw_config>::create);
-		bool registered = this->_interactsFact.register_object(Inter_sw_config::name(), f);
-		//if(registered)
-			//lg.dbg("All good registered component Inter_sw_config");		
+		this->_interactsFact.register_object(Inter_sw_config::name(), f);
+		
+		f = boost::bind(&InteractorCreator<Inter_sw_config_setter>::create);
+		this->_interactsFact.register_object(Inter_sw_config_setter::name(), f);
+	
 	}
 	
 	void Msg_resolver::getInstance(const container::Context* ctxt, 
@@ -53,7 +55,15 @@ namespace vigil
 		if (_temp_ptr)
 			return this->_temp_ptr->arg_requires();
 		else
-			throw std::logic_error("Must call succesfully init_interactor first!");
+			throw std::logic_error("Must call init_interactor first!");
+	}
+	
+	bool Msg_resolver::is_modify() const
+	{
+		if (_temp_ptr)
+			return this->_temp_ptr->is_modify();
+		else
+			throw std::logic_error("Must call init_interactor first!");	
 	}
 	
 	int Msg_resolver::resolve_request(const datapathid& did, const request_arguments& args)
@@ -66,10 +76,11 @@ namespace vigil
 			return send_openflow_msg(did, (struct ofl_msg_header *)msg, 1/*xid*/, false/*block*/);
 		}
 		else
-			throw std::logic_error("Must call succesfully init_interactor first!");
+			throw std::logic_error("Must call init_interactor first!");
 			
 	}
-
+	
+	
 		 
 	REGISTER_COMPONENT(vigil::container::
 		     Simple_component_factory<vigil::Msg_resolver>, 

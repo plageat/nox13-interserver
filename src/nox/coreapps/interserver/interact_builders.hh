@@ -3,11 +3,14 @@
 
 #include "interactor.hh"
 #include <string>
+#include <utility>
 
 namespace vigil
 {
   using namespace vigil::container; 
-  
+
+  typedef std::pair<std::string, enum ofp_type> builder_name;
+	
   class Inter_sw_config : public Interactor 
   {
 	public:
@@ -15,7 +18,7 @@ namespace vigil
 		std::vector<std::string> arg_requires();
 		struct ofl_msg_header * request_msg_creator(const request_arguments& );
 		bool is_modify() const;
-		static enum ofp_type name(); 
+		static builder_name name(); 
   };
   
   class Inter_sw_config_setter : public Interactor
@@ -24,7 +27,7 @@ namespace vigil
 		std::vector<std::string> arg_requires();
 		struct ofl_msg_header * request_msg_creator(const request_arguments& );
 		bool is_modify() const;
-		static enum ofp_type name(); 
+		static builder_name name();
   };
   
   class Inter_features_request : public Interactor
@@ -33,7 +36,7 @@ namespace vigil
 		std::vector<std::string> arg_requires();
 		struct ofl_msg_header * request_msg_creator(const request_arguments& );
 		bool is_modify() const;
-		static enum ofp_type name(); 
+		static builder_name name(); 
   };
 };
 

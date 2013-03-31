@@ -20,18 +20,26 @@ namespace vigil
 	{
 	}
 	
+	const id_to_type& Msg_resolver::get_type_saver() const
+	{
+		return _res_ids;
+	}
+	
 	void Msg_resolver::install()
 	{
 		boost::function< Interactor* () > f;
 		// to register 
 		f = boost::bind(&InteractorCreator<Inter_sw_config>::create);
-		this->_interactsFact.register_object(Inter_sw_config::name(), f);
+		this->_interactsFact.register_object(Inter_sw_config::name().second, f);
+		_res_ids.insert(Inter_sw_config::name());
 		
 		f = boost::bind(&InteractorCreator<Inter_sw_config_setter>::create);
-		this->_interactsFact.register_object(Inter_sw_config_setter::name(), f);
+		this->_interactsFact.register_object(Inter_sw_config_setter::name().second, f);
+		_res_ids.insert(Inter_sw_config_setter::name());
 		
 		f = boost::bind(&InteractorCreator<Inter_features_request>::create);
-		this->_interactsFact.register_object(Inter_features_request::name(), f);
+		this->_interactsFact.register_object(Inter_features_request::name().second, f);
+		_res_ids.insert(Inter_features_request::name());
 	
 	}
 	

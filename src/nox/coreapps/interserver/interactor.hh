@@ -45,7 +45,7 @@ namespace vigil
 		virtual std::vector<std::string> arg_requires() = 0;
 		
 		virtual  struct ofl_msg_header * request_msg_creator(const request_arguments& ) = 0;
-		// returns true if it is modify OpenFlow request 
+		// must return true if it is modify OpenFlow request 
 		virtual bool is_modify() const = 0;
 		
 		virtual const char* get_name() const

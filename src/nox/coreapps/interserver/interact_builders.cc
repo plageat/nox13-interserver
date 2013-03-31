@@ -36,14 +36,23 @@ namespace vigil
 		return false;
 	}
 	
-	enum ofp_type Inter_sw_config::name()
+	builder_name Inter_sw_config::name()
 	{
-		return OFPT_GET_CONFIG_REQUEST;
+		builder_name n;
+		n.first = "get_sw_config";
+		n.second = OFPT_GET_CONFIG_REQUEST;
+		
+		return n;  
 	}
+
 	//======================================
-	enum ofp_type Inter_sw_config_setter::name()
+	builder_name Inter_sw_config_setter::name()
 	{
-		return OFPT_SET_CONFIG;
+		builder_name n;
+		n.first = "set_sw_config";
+		n.second = OFPT_SET_CONFIG;
+		
+		return n;  
 	}
 	
 	bool Inter_sw_config_setter::is_modify() const
@@ -75,9 +84,13 @@ namespace vigil
 		return (ofl_msg_header *)msg;
 	}
 	//=========================================
-	enum ofp_type Inter_features_request::name()
+	builder_name Inter_features_request::name()
 	{
-		return OFPT_FEATURES_REQUEST;
+		builder_name n;
+		n.first = "features_request";
+		n.second = OFPT_FEATURES_REQUEST;
+		
+		return n;
 	}
 	
 	bool Inter_features_request::is_modify() const

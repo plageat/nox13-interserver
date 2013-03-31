@@ -11,10 +11,13 @@ namespace vigil
 {
   using namespace vigil::container; 
   
+  typedef std::map<std::string, enum ofp_type> id_to_type;
+  
   class Msg_resolver : public Component
   {
 	  private:
 		cl_factory<Interactor, enum ofp_type , boost::function< Interactor* () > > _interactsFact;
+		id_to_type _res_ids;
 	  
 		boost::shared_ptr<Interactor> _temp_ptr;
 	  public:
@@ -30,6 +33,8 @@ namespace vigil
 
 		static void getInstance(const container::Context* ctxt, 
 									vigil::Msg_resolver*& scpa);
+									
+		const id_to_type& get_type_saver() const;
 		// msg_resolver main logic
 		
 		bool init_interactor(enum ofp_type);	// must be call first!

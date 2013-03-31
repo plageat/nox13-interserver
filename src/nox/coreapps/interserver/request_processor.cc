@@ -47,20 +47,8 @@ namespace vigil
 	enum ofp_type Request_processor::interpret_type(json_object* jobj)
 	{
 		// replacing switch / case construction 
-		static type_saver type_hash;
-		static bool init = false;
-		if(!init )
-		{
-			// to add key and value for type			
-			type_hash.insert(type_saver::value_type(
-								std::string("get_sw_config"),OFPT_GET_CONFIG_REQUEST) );
-			type_hash.insert(type_saver::value_type(
-								std::string("set_sw_config"),OFPT_SET_CONFIG) );
-			type_hash.insert(type_saver::value_type(
-								std::string("features_request"),OFPT_FEATURES_REQUEST) );
-								
-			init = true;
-		}
+		Msg_resolver* reslv = NULL;
+		static type_saver type_hash = (this->resolve(reslv), reslv->get_type_saver()) ;
 
 		json_object* t = json::get_dict_value(jobj,std::string("type"));
 		if(t == NULL)

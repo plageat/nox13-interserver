@@ -70,6 +70,8 @@ namespace vigil
 	Disposition Interserver::shutdown_handler(const Event&)
 	{
 		_server->stop();
+		//_rp_info._http_sync.try_lock() ;
+		
 		return CONTINUE;
 	}
 	

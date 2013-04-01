@@ -1,7 +1,7 @@
 #include "request_processor.hh"
 
 #include "interact_event.hh"
-//#include "inter_sw_config.hh"
+#include <algorithm>
 #include "assert.hh"
 #include "vlog.hh"
 #include "hash_map.hh"
@@ -42,9 +42,9 @@ namespace vigil
 		return datapathid::from_host(id);
 	}
 	
-	typedef std::map< std::string, enum ofp_type> type_saver;
+	typedef std::vector< std::string> type_saver;
 	// this function analize type of request
-	enum ofp_type Request_processor::interpret_type(json_object* jobj)
+	std::string Request_processor::interpret_type(json_object* jobj)
 	{
 		// replacing switch / case construction 
 		Msg_resolver* reslv = NULL;
@@ -60,10 +60,10 @@ namespace vigil
 		
 		type_saver::iterator i;
 		
-		if((i = type_hash.find(str_t)) == type_hash.end() )
+		if((i = std::find(type_hash.begin(),type_hash.end(),str_t)) == type_hash.end() )
 			throw http_request_error("POST data containes invalid type field\n",e_bad_request);
 
-		return i->second;
+		return *i;
 	}
 	
 	request_arguments Request_processor::find_args(json_object* jobj ,const std::vector<std::string>& keys)
@@ -126,7 +126,7 @@ namespace vigil
 		{
 			try
 			{
-				enum ofp_type tp;
+				std::string tp;
 				if(me.get_request()._post_data.size() == 0)
 					throw http_request_error("POST data not found!\n",e_not_found);
 			
@@ -158,7 +158,9 @@ namespace vigil
 				dpid_check(did);
 				int sendGood = reslv->resolve_request(did,args);
 				if(sendGood != 0)
+				{
 					throw http_request_error("nox_core sending interactor msg error\n",e_internal_server_error);
+				}
 				// send reply now if modify request 
 				if(mod_req)
 					postResponse( Return_msg(std::string("Accepted\n"),e_ok) );

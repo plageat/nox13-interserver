@@ -50,6 +50,38 @@ namespace vigil
 		
 		return CONTINUE;
 	}
+	// problen of multiply calls
+	Disposition Facade_answer::handle_table_features(const Event& e)
+	{
+		std::string response;
+		Switch_table_features h;
+		
+		const Ofp_msg_event& pi = assert_cast<const Ofp_msg_event&>(e);
+		struct ofl_msg_multipart_reply_table_features *repl = (struct ofl_msg_multipart_reply_table_features *)**pi.msg;
+		
+		lg.dbg("I must call 1 times!");
+		
+		response = h.to_string(repl);
+		
+		acceptResponse(response);
+		
+		return CONTINUE;
+	}
+	
+	Disposition Facade_answer::handle_desc(const Event &e)
+	{
+		std::string response;
+		Switch_desc h;
+		
+		const Ofp_msg_event& pi = assert_cast<const Ofp_msg_event&>(e);
+		struct ofl_msg_reply_desc *repl = (struct ofl_msg_reply_desc *)**pi.msg;
+		
+		response = h.to_string(repl);
+		
+		acceptResponse(response);
+		
+		return CONTINUE;
+	}
 	
 	void Facade_answer::install()
 	{
@@ -58,6 +90,12 @@ namespace vigil
 							boost::bind(&Facade_answer::handle_sw_config_reply, this, _1) );
 		register_handler(Ofp_msg_event::get_name(OFPT_FEATURES_REPLY), 
 							boost::bind(&Facade_answer::handle_features_reply, this, _1) );
+		
+		register_handler(Ofp_msg_event::get_stats_name(OFPMP_TABLE_FEATURES), 
+							boost::bind(&Facade_answer::handle_desc, this, _1) );
+							
+		register_handler(Ofp_msg_event::get_stats_name(OFPMP_DESC), 
+							boost::bind(&Facade_answer::handle_desc, this, _1) );
 	}
 	
 	void Facade_answer::getInstance(const container::Context* ctxt, 

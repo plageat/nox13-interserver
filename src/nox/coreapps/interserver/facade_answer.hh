@@ -29,6 +29,10 @@ namespace vigil
 		Disposition handle_sw_config_reply(const Event& e);
 		
 		Disposition handle_features_reply(const Event& e);
+		
+		Disposition handle_table_features(const Event&);
+		
+		Disposition handle_desc(const Event&);
   };
   
 };

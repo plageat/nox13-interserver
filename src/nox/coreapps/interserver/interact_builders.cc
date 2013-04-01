@@ -38,21 +38,13 @@ namespace vigil
 	
 	builder_name Inter_sw_config::name()
 	{
-		builder_name n;
-		n.first = "get_sw_config";
-		n.second = OFPT_GET_CONFIG_REQUEST;
-		
-		return n;  
+		return "get_sw_config";  
 	}
 
 	//======================================
 	builder_name Inter_sw_config_setter::name()
-	{
-		builder_name n;
-		n.first = "set_sw_config";
-		n.second = OFPT_SET_CONFIG;
-		
-		return n;  
+	{		
+		return "set_sw_config";  
 	}
 	
 	bool Inter_sw_config_setter::is_modify() const
@@ -85,12 +77,8 @@ namespace vigil
 	}
 	//=========================================
 	builder_name Inter_features_request::name()
-	{
-		builder_name n;
-		n.first = "features_request";
-		n.second = OFPT_FEATURES_REQUEST;
-		
-		return n;
+	{		
+		return "features_request";
 	}
 	
 	bool Inter_features_request::is_modify() const
@@ -111,5 +99,62 @@ namespace vigil
 		msg->type = OFPT_FEATURES_REQUEST;
 		
 		return msg;
+	}
+	//===========================================
+	
+	builder_name Inter_table_features::name()
+	{		
+		return "table_features";
+	}
+	
+	bool Inter_table_features::is_modify() const
+	{
+		return false;
+	}
+	
+	std::vector<std::string> Inter_table_features::arg_requires()
+	{
+		std::vector<std::string> args;
+		
+		return args;
+	}
+	
+	struct ofl_msg_header * Inter_table_features::request_msg_creator(const request_arguments& args)
+	{
+		struct ofl_msg_multipart_request_table_features*  msg = new ofl_msg_multipart_request_table_features;
+		msg->header.header.type = OFPT_MULTIPART_REQUEST;
+		msg->header.type = OFPMP_TABLE_FEATURES;
+		msg->tables_num = 0;
+		msg->table_features = 0;
+		
+		return (ofl_msg_header*)msg;
+	}
+	
+	//===========================================
+	
+	builder_name Inter_desc::name()
+	{		
+		return "switch_description";
+	}
+	
+	bool Inter_desc::is_modify() const
+	{
+		return false;
+	}
+	
+	std::vector<std::string> Inter_desc::arg_requires()
+	{
+		std::vector<std::string> args;
+		
+		return args;
+	}
+	
+	struct ofl_msg_header * Inter_desc::request_msg_creator(const request_arguments& args)
+	{
+		struct ofl_msg_multipart_request_header*  msg = new ofl_msg_multipart_request_header;
+		msg->header.type = OFPT_MULTIPART_REQUEST;
+		msg->type = OFPMP_DESC;
+		
+		return (ofl_msg_header*)msg;
 	}
 };

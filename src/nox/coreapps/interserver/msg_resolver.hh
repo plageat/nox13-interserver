@@ -11,12 +11,12 @@ namespace vigil
 {
   using namespace vigil::container; 
   
-  typedef std::map<std::string, enum ofp_type> id_to_type;
+  typedef std::vector<std::string> id_to_type;
   
   class Msg_resolver : public Component
   {
 	  private:
-		cl_factory<Interactor, enum ofp_type , boost::function< Interactor* () > > _interactsFact;
+		cl_factory<Interactor, std::string , boost::function< Interactor* () > > _interactsFact;
 		id_to_type _res_ids;
 	  
 		boost::shared_ptr<Interactor> _temp_ptr;
@@ -37,7 +37,7 @@ namespace vigil
 		const id_to_type& get_type_saver() const;
 		// msg_resolver main logic
 		
-		bool init_interactor(enum ofp_type);	// must be call first!
+		bool init_interactor(const std::string&);	// must be call first!
 		std::vector<std::string> give_arguments() const;
 		bool is_modify() const;
 		int resolve_request(const datapathid& did, const request_arguments&);	// must be call last!

@@ -9,6 +9,7 @@
 namespace vigil
 {	
 	using namespace vigil::container;    
+	using namespace std;
 	 
 	std::string Switch_get_config_reply::to_string( struct ofl_msg_get_config_reply *repl)
 	{
@@ -60,6 +61,29 @@ namespace vigil
 		sbuf << "reasemble ip fragments: " << (capabilities & OFPC_IP_REASM ? "yes" : "no") << std::endl;
 		sbuf << "queue statistics: " << (capabilities & OFPC_QUEUE_STATS ? "yes" : "no") << std::endl;
 		sbuf << "block looping ports: " << (capabilities & OFPC_PORT_BLOCKED ? "yes" : "no") << std::endl;
+		
+		return sbuf.str();
+	}
+	
+	std::string Switch_table_features::to_string(struct ofl_msg_multipart_reply_table_features * repl)
+	{
+		std::stringstream sbuf;
+		
+		// future work
+		sbuf << "Not implemented\n";
+		
+		return sbuf.str();
+	}
+	
+	std::string Switch_desc::to_string(struct ofl_msg_reply_desc* repl)
+	{
+		std::stringstream sbuf;
+		
+		sbuf << "Manufacturer:	" << repl->mfr_desc << endl;
+		sbuf << "Hardware:	" << repl->hw_desc << endl;
+		sbuf << "Software:	" << repl->sw_desc << endl;
+		sbuf << "Serial number:	" << repl->serial_num << endl;
+		sbuf << "Datapath:	" << repl->dp_desc << endl;
 		
 		return sbuf.str();
 	}

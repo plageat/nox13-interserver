@@ -30,16 +30,24 @@ namespace vigil
 		boost::function< Interactor* () > f;
 		// to register 
 		f = boost::bind(&InteractorCreator<Inter_sw_config>::create);
-		this->_interactsFact.register_object(Inter_sw_config::name().second, f);
-		_res_ids.insert(Inter_sw_config::name());
+		this->_interactsFact.register_object(Inter_sw_config::name(), f);
+		_res_ids.push_back(Inter_sw_config::name());
 		
 		f = boost::bind(&InteractorCreator<Inter_sw_config_setter>::create);
-		this->_interactsFact.register_object(Inter_sw_config_setter::name().second, f);
-		_res_ids.insert(Inter_sw_config_setter::name());
+		this->_interactsFact.register_object(Inter_sw_config_setter::name(), f);
+		_res_ids.push_back(Inter_sw_config_setter::name());
 		
 		f = boost::bind(&InteractorCreator<Inter_features_request>::create);
-		this->_interactsFact.register_object(Inter_features_request::name().second, f);
-		_res_ids.insert(Inter_features_request::name());
+		this->_interactsFact.register_object(Inter_features_request::name(), f);
+		_res_ids.push_back(Inter_features_request::name());
+		
+		f = boost::bind(&InteractorCreator<Inter_table_features>::create);
+		this->_interactsFact.register_object(Inter_table_features::name(), f);
+		_res_ids.push_back(Inter_table_features::name());
+		
+		f = boost::bind(&InteractorCreator<Inter_desc>::create);
+		this->_interactsFact.register_object(Inter_desc::name(), f);
+		_res_ids.push_back(Inter_desc::name());
 	
 	}
 	
@@ -51,7 +59,7 @@ namespace vigil
 					(typeid(Msg_resolver).name())));
 	}
 	
-	bool Msg_resolver::init_interactor(enum ofp_type tp)
+	bool Msg_resolver::init_interactor(const std::string& tp)
 	{
 		this->_temp_ptr = _interactsFact.create_object(tp);
 		
@@ -84,6 +92,7 @@ namespace vigil
 			ofl_msg_header * msg = this->_temp_ptr->request_msg_creator(args);
 			// clear temp pointer
 			_temp_ptr.reset();
+
 			return send_openflow_msg(did, (struct ofl_msg_header *)msg, 1/*xid*/, false/*block*/);
 		}
 		else

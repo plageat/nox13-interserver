@@ -41,7 +41,7 @@ namespace vigil
 		static void getInstance(const container::Context* ctxt, 
 									vigil::Request_processor*& scpa);
 		
-		enum ofp_type interpret_type(json_object*);	
+		std::string interpret_type(json_object*);	
 		datapathid interpret_dpid(json_object*);	
 		request_arguments find_args(json_object*, const std::vector<std::string>&);
   };

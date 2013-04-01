@@ -23,6 +23,17 @@ namespace vigil
 		
   };
   
+  class Switch_table_features
+  {
+	public:
+		std::string to_string(struct ofl_msg_multipart_reply_table_features * repl);
+  };
+  
+  class Switch_desc
+  {
+	public:
+		static std::string to_string(struct ofl_msg_reply_desc * repl);
+  };
 };
 
   

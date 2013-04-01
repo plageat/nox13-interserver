@@ -23,6 +23,11 @@ namespace vigil
 		return std::vector<std::string> ();
 	}
 	
+	std::vector<std::string> Inter_sw_config::additional_args()
+	{
+		return std::vector<std::string> ();
+	}
+	
 	struct ofl_msg_header * Inter_sw_config::request_msg_creator(const request_arguments& args)
 	{
 		struct ofl_msg_header*  msg = new ofl_msg_header;
@@ -61,6 +66,11 @@ namespace vigil
 		return args;
 	}
 	
+	std::vector<std::string> Inter_sw_config_setter::additional_args()
+	{
+		return std::vector<std::string> ();
+	}
+	
 	struct ofl_msg_header * Inter_sw_config_setter::request_msg_creator(const request_arguments& args)
 	{
 		struct ofl_msg_set_config*  msg = new ofl_msg_set_config;
@@ -93,6 +103,11 @@ namespace vigil
 		return args;
 	}
 	
+	std::vector<std::string> Inter_features_request::additional_args()
+	{
+		return std::vector<std::string> ();
+	}
+	
 	struct ofl_msg_header * Inter_features_request::request_msg_creator(const request_arguments& args)
 	{
 		struct ofl_msg_header*  msg = new ofl_msg_header;
@@ -117,6 +132,11 @@ namespace vigil
 		std::vector<std::string> args;
 		
 		return args;
+	}
+	
+	std::vector<std::string> Inter_table_features::additional_args()
+	{
+		return std::vector<std::string> ();
 	}
 	
 	struct ofl_msg_header * Inter_table_features::request_msg_creator(const request_arguments& args)
@@ -149,11 +169,48 @@ namespace vigil
 		return args;
 	}
 	
+	std::vector<std::string> Inter_desc::additional_args()
+	{
+		return std::vector<std::string> ();
+	}
+	
 	struct ofl_msg_header * Inter_desc::request_msg_creator(const request_arguments& args)
 	{
 		struct ofl_msg_multipart_request_header*  msg = new ofl_msg_multipart_request_header;
 		msg->header.type = OFPT_MULTIPART_REQUEST;
 		msg->type = OFPMP_DESC;
+		
+		return (ofl_msg_header*)msg;
+	}
+	//===========================================
+	
+	builder_name Inter_table_stats::name()
+	{		
+		return "table_stats";
+	}
+	
+	bool Inter_table_stats::is_modify() const
+	{
+		return false;
+	}
+	
+	std::vector<std::string> Inter_table_stats::arg_requires()
+	{
+		std::vector<std::string> args;
+		
+		return args;
+	}
+	
+	std::vector<std::string> Inter_table_stats::additional_args()
+	{
+		return std::vector<std::string> ();
+	}
+	
+	struct ofl_msg_header * Inter_table_stats::request_msg_creator(const request_arguments& args)
+	{
+		struct ofl_msg_multipart_request_header*  msg = new ofl_msg_multipart_request_header;
+		msg->header.type = OFPT_MULTIPART_REQUEST;
+		msg->type = OFPMP_TABLE;
 		
 		return (ofl_msg_header*)msg;
 	}

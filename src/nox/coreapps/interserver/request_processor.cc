@@ -66,7 +66,8 @@ namespace vigil
 		return *i;
 	}
 	
-	request_arguments Request_processor::find_args(json_object* jobj ,const std::vector<std::string>& keys)
+	request_arguments Request_processor::find_args(json_object* jobj ,const std::vector<std::string>& keys,
+																		const std::vector<std::string>& addit_keys)
 	{
 		request_arguments args;
 		json_object* t = NULL;
@@ -96,6 +97,21 @@ namespace vigil
 			s += th_msg;
 			throw http_request_error( s.c_str() ,e_bad_request);
 		}
+		// additional arguments processing
+		i1 = addit_keys.begin();
+		i2 = addit_keys.end();
+
+		for(i1; i1 != i2; ++i1)
+		{
+			t = json::get_dict_value(jobj,*i1);
+			 
+			if(t == NULL)
+				continue;
+				
+			value = t->get_string(true);
+			args[*i1] = value;
+		}
+		
 	
 		return args;
 	}
@@ -148,9 +164,10 @@ namespace vigil
 					http_request_error("Requested type is not curretly supported by Interserver\n" ,e_not_supported);
 				// step 2
 				std::vector<std::string> keys = reslv->give_arguments();
+				std::vector<std::string> addit_keys = reslv->give_additional_args();
 				request_arguments args;
 				if(keys.size() != 0)
-					args = find_args(a,keys);
+					args = find_args(a,keys,addit_keys);
 				// step 3
 				bool mod_req = reslv->is_modify();
 				// step 4

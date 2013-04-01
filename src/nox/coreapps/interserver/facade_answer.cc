@@ -83,6 +83,21 @@ namespace vigil
 		return CONTINUE;
 	}
 	
+	Disposition Facade_answer::handle_table_stats(const Event &e)
+	{
+		std::string response;
+		Switch_table_stats h;
+		
+		const Ofp_msg_event& pi = assert_cast<const Ofp_msg_event&>(e);
+		struct ofl_msg_multipart_reply_table *repl = (struct ofl_msg_multipart_reply_table *)**pi.msg;
+		
+		response = h.to_string(repl);
+		
+		acceptResponse(response);
+		
+		return CONTINUE;
+	}
+	
 	void Facade_answer::install()
 	{
 		//to add all answers from switch 
@@ -96,6 +111,9 @@ namespace vigil
 							
 		register_handler(Ofp_msg_event::get_stats_name(OFPMP_DESC), 
 							boost::bind(&Facade_answer::handle_desc, this, _1) );
+							
+		register_handler(Ofp_msg_event::get_stats_name(OFPMP_TABLE), 
+							boost::bind(&Facade_answer::handle_table_stats, this, _1) );
 	}
 	
 	void Facade_answer::getInstance(const container::Context* ctxt, 

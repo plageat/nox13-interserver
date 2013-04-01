@@ -48,6 +48,10 @@ namespace vigil
 		f = boost::bind(&InteractorCreator<Inter_desc>::create);
 		this->_interactsFact.register_object(Inter_desc::name(), f);
 		_res_ids.push_back(Inter_desc::name());
+		
+		f = boost::bind(&InteractorCreator<Inter_table_stats>::create);
+		this->_interactsFact.register_object(Inter_table_stats::name(), f);
+		_res_ids.push_back(Inter_table_stats::name());
 	
 	}
 	
@@ -73,6 +77,14 @@ namespace vigil
 	{
 		if (_temp_ptr)
 			return this->_temp_ptr->arg_requires();
+		else
+			throw std::logic_error("Must call init_interactor first!");
+	}
+	
+	std::vector<std::string> Msg_resolver::give_additional_args() const
+	{
+		if (_temp_ptr)
+			return this->_temp_ptr->additional_args();
 		else
 			throw std::logic_error("Must call init_interactor first!");
 	}

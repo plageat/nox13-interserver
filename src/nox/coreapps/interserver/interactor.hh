@@ -43,6 +43,8 @@ namespace vigil
 	public:
 		// which arg-s must be in request?
 		virtual std::vector<std::string> arg_requires() = 0;
+		// additional optional arguments
+		virtual std::vector<std::string> additional_args() = 0;
 		
 		virtual  struct ofl_msg_header * request_msg_creator(const request_arguments& ) = 0;
 		// must return true if it is modify OpenFlow request 

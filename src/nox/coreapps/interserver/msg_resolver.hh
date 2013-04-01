@@ -39,6 +39,7 @@ namespace vigil
 		
 		bool init_interactor(const std::string&);	// must be call first!
 		std::vector<std::string> give_arguments() const;
+		std::vector<std::string> give_additional_args() const;
 		bool is_modify() const;
 		int resolve_request(const datapathid& did, const request_arguments&);	// must be call last!
 		

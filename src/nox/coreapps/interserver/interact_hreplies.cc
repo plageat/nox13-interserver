@@ -11,7 +11,7 @@ namespace vigil
 	using namespace vigil::container;    
 	using namespace std;
 	 
-	std::string Switch_get_config_reply::to_string( struct ofl_msg_get_config_reply *repl)
+	std::string Switch_get_config_reply::to_string( struct ofl_msg_get_config_reply *repl) 
 	{
 		std::stringstream sbuf;
 		
@@ -35,7 +35,7 @@ namespace vigil
 		return sbuf.str();
 	}
 	
-	std::string Switch_features_reply::extract_features( struct ofl_msg_features_reply *repl)
+	std::string Switch_features_reply::extract_features( struct ofl_msg_features_reply *repl) const
 	{
 		std::stringstream sbuf;
 		
@@ -48,7 +48,7 @@ namespace vigil
 		
 	}
 	
-	std::string Switch_features_reply::extract_capabilities(uint32_t capabilities)
+	std::string Switch_features_reply::extract_capabilities(uint32_t capabilities) const
 	{
 		std::stringstream sbuf;
 		
@@ -84,6 +84,30 @@ namespace vigil
 		sbuf << "Software:	" << repl->sw_desc << endl;
 		sbuf << "Serial number:	" << repl->serial_num << endl;
 		sbuf << "Datapath:	" << repl->dp_desc << endl;
+		
+		return sbuf.str();
+	}
+	
+	std::string Switch_table_stats::read_stats(struct ofl_table_stats *s) const
+	{
+		std::stringstream sbuf;
+		
+		sbuf << "Table ID:	" << static_cast<int>(s->table_id) << endl;
+		sbuf << "Active entries count:	" << s->active_count << endl;
+		sbuf << "Packets looked up in table count:	" << s->lookup_count << endl;
+		sbuf << "Packets that hit table count:	" << s->matched_count << endl;
+		
+		sbuf << "\n";
+		
+		return sbuf.str();
+	}
+	
+	std::string Switch_table_stats::to_string(struct ofl_msg_multipart_reply_table * repl) const
+	{
+		std::stringstream sbuf;
+		
+		for(unsigned i = 0; i < repl->stats_num; ++i)
+			sbuf << this->read_stats(repl->stats[i]);
 		
 		return sbuf.str();
 	}

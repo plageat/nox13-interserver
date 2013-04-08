@@ -134,6 +134,41 @@ namespace vigil
 		return CONTINUE;
 	}
 	
+	Disposition Facade_answer::handle_agr_flow_info(const Event& e)
+	{
+		std::stringstream sbuf;
+		
+		const Ofp_msg_event& pi = assert_cast<const Ofp_msg_event&>(e);
+		struct ofl_msg_multipart_reply_aggregate *repl = (struct ofl_msg_multipart_reply_aggregate *)**pi.msg;
+		// todo
+		sbuf << "Byte count: " <<  (int)repl->byte_count << std::endl;
+		sbuf << "Packet count: " <<  (int)repl->packet_count << std::endl;
+		sbuf << "Flow count: " <<  (int)repl->flow_count << std::endl;
+		
+		acceptResponse( sbuf.str() );
+
+		return CONTINUE;
+	}
+	
+	Disposition Facade_answer::handle_port_stats(const Event&e)
+	{
+		std::string response;
+		
+		const Ofp_msg_event& pi = assert_cast<const Ofp_msg_event&>(e);
+		struct ofl_msg_multipart_reply_port *repl = (struct ofl_msg_multipart_reply_port *)**pi.msg;
+	
+		for(int i = 0;  i < repl->stats_num; ++i)
+		{
+			response += ofl_structs_port_stats_to_string(repl->stats[i]);
+			response += "\n\n";
+		}
+		
+		acceptResponse(response);
+		
+		return CONTINUE;
+	}
+	
+	
 	void Facade_answer::install()
 	{
 		//to add all answers from switch 
@@ -153,6 +188,12 @@ namespace vigil
 							
 		register_handler(Ofp_msg_event::get_stats_name(OFPMP_FLOW), 
 							boost::bind(&Facade_answer::handle_flow_info, this, _1) );
+							
+		register_handler(Ofp_msg_event::get_stats_name(OFPMP_AGGREGATE), 
+							boost::bind(&Facade_answer::handle_agr_flow_info, this, _1) );
+							
+		register_handler(Ofp_msg_event::get_stats_name(OFPMP_PORT_STATS), 
+							boost::bind(&Facade_answer::handle_port_stats, this, _1) );
 	}
 	
 	void Facade_answer::getInstance(const container::Context* ctxt, 

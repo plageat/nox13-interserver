@@ -515,7 +515,7 @@ namespace vigil
 		
 		Flow *f = new Flow;
 		request_arguments::const_iterator i;
-		
+		// we have problems with maskeble mathes..
 		BOOST_FOREACH(const request_arguments::value_type& p, args)
 		{
 			if( p.first == "ipv4_src" || 
@@ -835,7 +835,98 @@ namespace vigil
 		_addit_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("cookie"),e_Num) );
 		_addit_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("cookie_mask"),e_Num) );
 	}
+		//===========================================
 	
+	builder_name Inter_flow_agr_info::name()
+	{		
+		return "agr_flow_info";
+	}
+	
+	bool Inter_flow_agr_info::is_modify() const
+	{
+		return false;
+	}
+	
+	struct ofl_msg_header * Inter_flow_agr_info::request_msg_creator(const request_arguments& args)
+	{
+		check_args(args);
+		
+		request_arguments::const_iterator i;
+		
+		struct ofl_msg_multipart_request_flow*  msg = new ofl_msg_multipart_request_flow;
+		msg->header.header.type = OFPT_MULTIPART_REQUEST;
+		msg->header.type = OFPMP_AGGREGATE;
+	
+		if( (i = args.find("table_id")) == args.end() )
+			msg->table_id = OFPTT_ALL;
+		else
+			msg->table_id = (uint8_t)atoi(i->second.c_str());
+		if( (i = args.find("out_port") ) == args.end() )
+			msg->out_port = OFPP_ANY;
+		else
+			msg->out_port = (uint32_t)atoi(i->second.c_str());
+		if( (i = args.find("out_group")) == args.end() )
+			msg->out_group = OFPG_ANY;
+		else	
+			msg->out_group = (uint32_t)atoi(i->second.c_str());
+		if( (i = args.find("cookie")) == args.end() )
+			msg->cookie = 0;
+		else
+			msg->cookie = (uint64_t)atoll(i->second.c_str());
+		if( (i = args.find("cookie_mask")) == args.end() )
+			msg->cookie_mask = 0;
+		else
+			msg->cookie_mask = (uint64_t)atoll(i->second.c_str());
+
+		msg->match =  matchBuilder.construct_match(args);
+	
+		return (ofl_msg_header*)msg;
+	}
+	
+	Inter_flow_agr_info::Inter_flow_agr_info()
+	{
+		_addit_args = matchBuilder.get_match_args(); 
+		_addit_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("table_id"),e_Num) );
+		_addit_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("out_port"),e_Num) );
+		_addit_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("out_group"),e_Num) );
+		_addit_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("cookie"),e_Num) );
+		_addit_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("cookie_mask"),e_Num) );
+	}
+	//=======================================
+	builder_name Inter_port_stats::name()
+	{		
+		return "port_stats";
+	}
+	
+	bool Inter_port_stats::is_modify() const
+	{
+		return false;
+	}
+	
+	struct ofl_msg_header * Inter_port_stats::request_msg_creator(const request_arguments& args)
+	{
+		check_args(args);
+		
+		request_arguments::const_iterator i;
+		
+		struct ofl_msg_multipart_request_port*  msg = new ofl_msg_multipart_request_port;
+		msg->header.header.type = OFPT_MULTIPART_REQUEST;
+		msg->header.type = OFPMP_PORT_STATS;
+	
+		if( (i = args.find("port")) == args.end() )
+			msg->port_no = OFPP_ANY;
+		else
+			msg->port_no = (uint8_t)atoi(i->second.c_str());
+
+	
+		return (ofl_msg_header*)msg;
+	}
+	
+	Inter_port_stats::Inter_port_stats()
+	{ 
+		_addit_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("port"),e_Num) );
+	}
+	//======================================
 	builder_name Inter_flow_mod::name() 
 	{
 		return "flow_mod";

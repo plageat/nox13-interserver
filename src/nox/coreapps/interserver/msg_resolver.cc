@@ -60,7 +60,14 @@ namespace vigil
 		f = boost::bind(&InteractorCreator<Inter_flow_mod>::create);
 		this->_interactsFact.register_object(Inter_flow_mod::name(), f);
 		_res_ids.push_back(Inter_flow_mod::name());
-	
+		
+		f = boost::bind(&InteractorCreator<Inter_flow_agr_info>::create);
+		this->_interactsFact.register_object(Inter_flow_agr_info::name(), f);
+		_res_ids.push_back(Inter_flow_agr_info::name());
+		
+		f = boost::bind(&InteractorCreator<Inter_port_stats>::create);
+		this->_interactsFact.register_object(Inter_port_stats::name(), f);
+		_res_ids.push_back(Inter_port_stats::name());
 	}
 	
 	void Msg_resolver::getInstance(const container::Context* ctxt, 

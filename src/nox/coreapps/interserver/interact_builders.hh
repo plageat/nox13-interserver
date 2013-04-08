@@ -133,6 +133,18 @@ namespace vigil
 		virtual ~Inter_flow_info() {};
   };
   
+  class Inter_flow_agr_info : public Interactor
+  {
+	public:
+		Inter_flow_agr_info();
+		
+		struct ofl_msg_header * request_msg_creator(const request_arguments& );
+		bool is_modify() const;
+		static builder_name name(); 
+		
+		virtual ~Inter_flow_agr_info() {};
+  };
+  
   class Inter_flow_mod : public Interactor
   {
 	public:
@@ -143,6 +155,18 @@ namespace vigil
 		static builder_name name(); 
 		
 		virtual ~Inter_flow_mod() {};
+  };
+  
+  class Inter_port_stats: public Interactor
+  {
+	public:
+		Inter_port_stats();
+		
+		struct ofl_msg_header * request_msg_creator(const request_arguments& );
+		bool is_modify() const;
+		static builder_name name(); 
+		
+		virtual ~Inter_port_stats() {};
   };
   
 };

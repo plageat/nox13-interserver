@@ -52,6 +52,14 @@ namespace vigil
 		f = boost::bind(&InteractorCreator<Inter_table_stats>::create);
 		this->_interactsFact.register_object(Inter_table_stats::name(), f);
 		_res_ids.push_back(Inter_table_stats::name());
+		
+		f = boost::bind(&InteractorCreator<Inter_flow_info>::create);
+		this->_interactsFact.register_object(Inter_flow_info::name(), f);
+		_res_ids.push_back(Inter_flow_info::name());
+		
+		f = boost::bind(&InteractorCreator<Inter_flow_mod>::create);
+		this->_interactsFact.register_object(Inter_flow_mod::name(), f);
+		_res_ids.push_back(Inter_flow_mod::name());
 	
 	}
 	

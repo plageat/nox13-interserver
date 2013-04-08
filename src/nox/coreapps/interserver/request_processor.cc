@@ -166,8 +166,7 @@ namespace vigil
 				std::vector<std::string> keys = reslv->give_arguments();
 				std::vector<std::string> addit_keys = reslv->give_additional_args();
 				request_arguments args;
-				if(keys.size() != 0)
-					args = find_args(a,keys,addit_keys);
+				args = find_args(a,keys,addit_keys);
 				// step 3
 				bool mod_req = reslv->is_modify();
 				// step 4

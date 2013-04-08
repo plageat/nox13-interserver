@@ -1,5 +1,9 @@
 #include "interact_hreplies.hh"
 
+#include "../oflib/ofl-actions.h"
+//#include "../oflib/oxm-match.h"
+#include "flow.hh"
+#include <boost/foreach.hpp>
 #include <algorithm>
 #include "nox.hh"
 //#include <map>
@@ -108,6 +112,45 @@ namespace vigil
 		
 		for(unsigned i = 0; i < repl->stats_num; ++i)
 			sbuf << this->read_stats(repl->stats[i]);
+		
+		return sbuf.str();
+	}
+	
+	
+	std::string Switch_flow_info::to_string(struct ofl_msg_multipart_reply_flow * repl) const
+	{
+		std::stringstream sbuf;
+		
+		if(repl->stats_num == 0)
+			return "No are flows installed\n";
+		
+		for(unsigned i = 0; i < repl->stats_num; ++i)
+			sbuf << this->read_stats(repl->stats[i]);
+		
+		return sbuf.str();
+	}
+	
+	std::string Switch_flow_info::read_stats(struct ofl_flow_stats* s) const
+	{
+		std::stringstream sbuf;
+		
+		sbuf << "ID of table flow came from:	" << (int)s->table_id << endl;
+		sbuf << "Flow has been alive (sec):	" << s->duration_sec << endl;
+		sbuf << "Flow has been alive (nsec):	" << s->duration_nsec << endl;
+		sbuf << "Priority:	" << s->priority << endl;
+		sbuf << "Idle timeout (sec):	" << (int)s->idle_timeout << endl;	// need modify
+		sbuf << "Hard timeout (sec):	" << (int)s->hard_timeout << endl;
+		sbuf << "Cookie:	"	<< s->cookie << endl;
+		sbuf << "Number of packets:	" << s->packet_count << endl;
+		sbuf << "Number of bytes:	" << s->byte_count << endl;
+		
+		sbuf << "Match fields are:" << endl;
+		// here process instruction and matchs
+		Flow f(  (const struct ofl_match*)s->match );
+		sbuf << f.to_string() << endl;
+		//Instruction i
+	//	ofl_action_to_string(struct ofl_action_header *s->instructions->, struct ofl_exp *exp);
+		
 		
 		return sbuf.str();
 	}

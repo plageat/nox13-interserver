@@ -25,7 +25,7 @@ msg_resolver_la_SOURCES = msg_resolver.cc interact_builders.cc
 msg_resolver_la_LDFLAGS = -module -export-dynamic
 
 facade_answer_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/src/nox -I. 
-facade_answer_la_SOURCES = facade_answer.cc interact_event.cc interact_hreplies.cc
+facade_answer_la_SOURCES = facade_answer.cc interact_event.cc
 facade_answer_la_LDFLAGS = -module -export-dynamic
 
 NOX_RUNTIMEFILES = meta.json

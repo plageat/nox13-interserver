@@ -42,6 +42,13 @@ namespace vigil
 		std::string to_string(struct ofl_msg_multipart_reply_table * repl) const;
   };
   
+  class Switch_flow_info
+  {
+	 // std::string parse_flags(uint16_t flags) const;
+	  std::string read_stats(struct ofl_flow_stats* s) const;
+	public:
+		std::string to_string(struct ofl_msg_multipart_reply_flow * repl) const;
+  };
   
 };
 

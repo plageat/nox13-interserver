@@ -35,6 +35,8 @@ namespace vigil
 		Disposition handle_desc(const Event&);
 		
 		Disposition handle_table_stats(const Event&);
+		
+		Disposition handle_flow_info(const Event&);
   };
   
 };

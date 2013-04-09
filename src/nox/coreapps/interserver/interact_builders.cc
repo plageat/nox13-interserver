@@ -1401,4 +1401,57 @@ namespace vigil
 
 		return (ofl_msg_header*)msg;
 	}
+	//======================================
+	
+	builder_name Inter_port_mod::name() 
+	{
+		return "port_mod";
+	}
+	
+	bool Inter_port_mod::is_modify() const
+	{
+		return true;
+	}
+	
+	Inter_port_mod::Inter_port_mod()
+	{
+		_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("port"),e_Num) );
+		_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("hw_addr"),e_MAC) );
+		_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("config"),e_Num) );
+		_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("advertise"),e_Num) );
+		
+		_addit_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("mask"),e_Num) );
+
+	}
+	
+	struct ofl_msg_header* Inter_port_mod::request_msg_creator(const request_arguments& args)
+	{
+		check_args(args);
+		
+		request_arguments::const_iterator i;
+		
+		struct ofl_msg_port_mod *msg = new ofl_msg_port_mod;
+	
+		uint32_t advertise = (uint32_t)atoi( args.find("advertise")->second.c_str() );
+		uint32_t port_no = (uint32_t)atoi( args.find("port")->second.c_str() );
+		uint32_t config = (uint32_t)atoi( args.find("config")->second.c_str() );
+		uint32_t mask;
+		
+		if( (i = args.find("mask") ) == args.end() )
+			mask = 0xffffffff;
+		else
+			mask = (uint32_t)atoi( i->second.c_str() );
+		
+		int len = ETH_ADDR_LEN;
+		ethernetaddr addr = ethernetaddr(args.find("hw_addr")->second);
+		memcpy(msg->hw_addr,addr.octet,len);
+		
+		msg->header.type = OFPT_PORT_MOD;
+		msg->advertise = advertise;
+		msg->port_no = port_no;
+		msg->config = config;
+		msg->mask = mask;
+		
+		return (ofl_msg_header*)msg;
+	}
 };

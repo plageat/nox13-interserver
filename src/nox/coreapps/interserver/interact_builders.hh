@@ -296,7 +296,18 @@ namespace vigil
 		
 		virtual ~Inter_port_mod() {};
   };
-  
+
+  class Inter_meter_mod: public Interactor
+  {
+	public:
+		Inter_meter_mod();
+		
+		struct ofl_msg_header * request_msg_creator(const request_arguments& );
+		bool is_modify() const;
+		static builder_name name(); 
+		
+		virtual ~Inter_meter_mod() {};
+  };
 };
 
 #endif

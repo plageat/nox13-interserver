@@ -1454,4 +1454,117 @@ namespace vigil
 		
 		return (ofl_msg_header*)msg;
 	}
+	//======================================
+	
+	builder_name Inter_meter_mod::name() 
+	{
+		return "meter_mod";
+	}
+	
+	bool Inter_meter_mod::is_modify() const
+	{
+		return true;
+	}
+	
+	Inter_meter_mod::Inter_meter_mod()
+	{
+		_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("command"),e_String) );
+		_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("flags"),e_Num) );
+		_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("meter_id"),e_String) );
+		_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("meter_type"),e_String) );
+		_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("rate"),e_Num) );
+		_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("burst_size"),e_Num) );
+		
+		_addit_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("prec_level"),e_Num) );
+
+	}
+	
+	struct ofl_msg_header* Inter_meter_mod::request_msg_creator(const request_arguments& args)
+	{
+		check_args(args);
+		
+		request_arguments::const_iterator i;
+		
+		struct ofl_msg_meter_mod *msg = new ofl_msg_meter_mod;
+	
+		uint16_t command;
+		uint16_t flags;
+		uint16_t meter_type;
+		uint32_t meter_id;
+		uint32_t rate;
+		uint32_t burst_size;
+		uint8_t prec_level; 
+		
+		std::string value = args.find("command")->second;
+		
+		if(value  == "add")
+				command = OFPMC_ADD;
+		else if(value == "modify")
+				command = OFPMC_MODIFY;
+		else if(value == "delete")
+				command = OFPMC_DELETE;
+		else
+			std::runtime_error("Invalid command!\n");
+			
+		flags =  (uint16_t)atoi( args.find("flags")->second.c_str() );
+		rate = (uint32_t)atoi( args.find("rate")->second.c_str() );
+		burst_size = (uint32_t)atoi( args.find("burst_size")->second.c_str() );
+		
+		value = args.find("meter_id")->second;
+		
+		if(value  == "slowpath")
+				meter_id = OFPM_SLOWPATH;
+		else if(value == "controller")
+				meter_id = OFPM_CONTROLLER;
+		else if(value == "all")
+				meter_id = OFPM_ALL;
+		else
+			meter_id = (uint32_t)atoi( value.c_str() ); // todo
+			
+		value = args.find("meter_type")->second;
+		
+		if(value  == "drop")
+				meter_type = OFPMBT_DROP;
+		else if(value == "dscp_remark")
+				meter_type = OFPMBT_DSCP_REMARK;
+		// future planing
+		//else if(value == "experementer")
+				//type = OFPMBT_EXPERIMENTER;
+		else
+			std::runtime_error("Invalid meter_type field!\n");
+		
+		if( (i = args.find("prec_level") ) == args.end() )
+			prec_level = 0;
+		else
+			prec_level = (uint8_t)atoi( i->second.c_str() );
+		
+		struct ofl_meter_band_header ** band = new ofl_meter_band_header*[1];
+	
+		switch(meter_type)
+		{
+			case OFPMBT_DROP:
+			{
+				band[0] = (ofl_meter_band_header*) new ofl_meter_band_drop;
+				break;
+			}
+			case OFPMBT_DSCP_REMARK:
+			{
+				band[0] = (ofl_meter_band_header*) new ofl_meter_band_dscp_remark;
+				((struct ofl_meter_band_dscp_remark*)band[0])->prec_level = prec_level;
+				break;
+			}
+		};
+		band[0]->burst_size = burst_size;
+		band[0]->rate = rate;
+		band[0]->type = meter_type;
+		
+		msg->bands = band;
+		msg->command = command;
+		msg->header.type = OFPT_METER_MOD;
+		msg->flags = flags;
+		msg->meter_bands_num = 1;
+		msg->meter_id = meter_id;
+		
+		return (ofl_msg_header*)msg;
+	}
 };

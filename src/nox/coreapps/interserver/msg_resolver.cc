@@ -112,6 +112,10 @@ namespace vigil
 		f = boost::bind(&InteractorCreator<Inter_port_mod>::create);
 		this->_interactsFact.register_object(Inter_port_mod::name(), f);
 		_res_ids.push_back(Inter_port_mod::name());
+		
+		f = boost::bind(&InteractorCreator<Inter_meter_mod>::create);
+		this->_interactsFact.register_object(Inter_meter_mod::name(), f);
+		_res_ids.push_back(Inter_meter_mod::name());
 	}
 	
 	void Msg_resolver::getInstance(const container::Context* ctxt, 

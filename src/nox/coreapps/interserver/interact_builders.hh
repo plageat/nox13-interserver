@@ -169,7 +169,110 @@ namespace vigil
 		virtual ~Inter_port_stats() {};
   };
   
+  class Inter_port_desc: public Interactor
+  {
+	public:
+		
+		struct ofl_msg_header * request_msg_creator(const request_arguments& );
+		bool is_modify() const;
+		static builder_name name(); 
+		
+		virtual ~Inter_port_desc() {};
+  };
+  
+  class Inter_queue_stats: public Interactor
+  {
+	public:
+		Inter_queue_stats();
+		
+		struct ofl_msg_header * request_msg_creator(const request_arguments& );
+		bool is_modify() const;
+		static builder_name name(); 
+		
+		virtual ~Inter_queue_stats() {};
+  };
+  // not work because of bad_port...?
+  class Inter_queue_config: public Interactor
+  {
+	public:
+		Inter_queue_config();
+		
+		struct ofl_msg_header * request_msg_creator(const request_arguments& );
+		bool is_modify() const;
+		static builder_name name(); 
+		
+		virtual ~Inter_queue_config() {};
+  };
+  
+  class Inter_group_stats: public Interactor
+  {
+	public:
+		Inter_group_stats();
+		
+		struct ofl_msg_header * request_msg_creator(const request_arguments& );
+		bool is_modify() const;
+		static builder_name name(); 
+		
+		virtual ~Inter_group_stats() {};
+  };
+  
+  class Inter_group_desc: public Interactor
+  {
+	public:
+		
+		struct ofl_msg_header * request_msg_creator(const request_arguments& );
+		bool is_modify() const;
+		static builder_name name(); 
+		
+		virtual ~Inter_group_desc() {};
+  };
+  
+  class Inter_group_features: public Interactor
+  {
+	public:
+		
+		struct ofl_msg_header * request_msg_creator(const request_arguments& );
+		bool is_modify() const;
+		static builder_name name(); 
+		
+		virtual ~Inter_group_features() {};
+  };
+
+  class Inter_meter_stats: public Interactor
+  {
+	public:
+		Inter_meter_stats();
+		
+		struct ofl_msg_header * request_msg_creator(const request_arguments& );
+		bool is_modify() const;
+		static builder_name name(); 
+		
+		virtual ~Inter_meter_stats() {};
+  };  
+
+  class Inter_meter_config: public Interactor
+  {
+	public:
+		Inter_meter_config();
+		
+		struct ofl_msg_header * request_msg_creator(const request_arguments& );
+		bool is_modify() const;
+		static builder_name name(); 
+		
+		virtual ~Inter_meter_config() {};
+  }; 
+  
+  class Inter_meter_features: public Interactor
+  {
+	public:
+		
+		struct ofl_msg_header * request_msg_creator(const request_arguments& );
+		bool is_modify() const;
+		static builder_name name(); 
+		
+		virtual ~Inter_meter_features() {};
+  };
+ 
 };
 
-  
 #endif

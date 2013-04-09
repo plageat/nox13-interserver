@@ -68,6 +68,42 @@ namespace vigil
 		f = boost::bind(&InteractorCreator<Inter_port_stats>::create);
 		this->_interactsFact.register_object(Inter_port_stats::name(), f);
 		_res_ids.push_back(Inter_port_stats::name());
+		
+		f = boost::bind(&InteractorCreator<Inter_port_desc>::create);
+		this->_interactsFact.register_object(Inter_port_desc::name(), f);
+		_res_ids.push_back(Inter_port_desc::name());
+		
+		f = boost::bind(&InteractorCreator<Inter_queue_stats>::create);
+		this->_interactsFact.register_object(Inter_queue_stats::name(), f);
+		_res_ids.push_back(Inter_queue_stats::name());
+		
+		f = boost::bind(&InteractorCreator<Inter_group_stats>::create);
+		this->_interactsFact.register_object(Inter_group_stats::name(), f);
+		_res_ids.push_back(Inter_group_stats::name());
+		
+		f = boost::bind(&InteractorCreator<Inter_group_desc>::create);
+		this->_interactsFact.register_object(Inter_group_desc::name(), f);
+		_res_ids.push_back(Inter_group_desc::name());
+		
+		f = boost::bind(&InteractorCreator<Inter_group_features>::create);
+		this->_interactsFact.register_object(Inter_group_features::name(), f);
+		_res_ids.push_back(Inter_group_features::name());
+		
+		f = boost::bind(&InteractorCreator<Inter_meter_stats>::create);
+		this->_interactsFact.register_object(Inter_meter_stats::name(), f);
+		_res_ids.push_back(Inter_meter_stats::name());
+		
+		f = boost::bind(&InteractorCreator<Inter_meter_config>::create);
+		this->_interactsFact.register_object(Inter_meter_config::name(), f);
+		_res_ids.push_back(Inter_meter_config::name());
+		
+		f = boost::bind(&InteractorCreator<Inter_meter_features>::create);
+		this->_interactsFact.register_object(Inter_meter_features::name(), f);
+		_res_ids.push_back(Inter_meter_features::name());
+		
+		f = boost::bind(&InteractorCreator<Inter_queue_config>::create);
+		this->_interactsFact.register_object(Inter_queue_config::name(), f);
+		_res_ids.push_back(Inter_queue_config::name());
 	}
 	
 	void Msg_resolver::getInstance(const container::Context* ctxt, 

@@ -916,7 +916,7 @@ namespace vigil
 		if( (i = args.find("port")) == args.end() )
 			msg->port_no = OFPP_ANY;
 		else
-			msg->port_no = (uint8_t)atoi(i->second.c_str());
+			msg->port_no = (uint32_t)atoi(i->second.c_str());
 
 	
 		return (ofl_msg_header*)msg;
@@ -926,7 +926,272 @@ namespace vigil
 	{ 
 		_addit_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("port"),e_Num) );
 	}
+	//=======================================
+	builder_name Inter_queue_stats::name()
+	{		
+		return "queue_stats";
+	}
+	
+	bool Inter_queue_stats::is_modify() const
+	{
+		return false;
+	}
+	
+	struct ofl_msg_header * Inter_queue_stats::request_msg_creator(const request_arguments& args)
+	{
+		check_args(args);
+		
+		request_arguments::const_iterator i;
+		
+		struct ofl_msg_multipart_request_queue*  msg = new ofl_msg_multipart_request_queue;
+		msg->header.header.type = OFPT_MULTIPART_REQUEST;
+		msg->header.type = OFPMP_QUEUE;
+	
+		if( (i = args.find("port")) == args.end() )
+			msg->port_no = OFPP_ANY;
+		else
+			msg->port_no = (uint32_t)atoi(i->second.c_str());
+		if( (i = args.find("queue_id")) == args.end() )
+			msg->queue_id = OFPQ_ALL;
+		else
+			msg->queue_id = (uint32_t)atoi(i->second.c_str());
+
+	
+		return (ofl_msg_header*)msg;
+	}
+	
+	Inter_queue_stats::Inter_queue_stats()
+	{ 
+		_addit_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("port"),e_Num) );
+		_addit_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("queue_id"),e_Num) );
+	}
+	//=======================================
+	builder_name Inter_group_stats::name()
+	{		
+		return "group_stats";
+	}
+	
+	bool Inter_group_stats::is_modify() const
+	{
+		return false;
+	}
+	
+	struct ofl_msg_header * Inter_group_stats::request_msg_creator(const request_arguments& args)
+	{
+		check_args(args);
+		
+		request_arguments::const_iterator i;
+		
+		struct ofl_msg_multipart_request_group*  msg = new ofl_msg_multipart_request_group;
+		msg->header.header.type = OFPT_MULTIPART_REQUEST;
+		msg->header.type = OFPMP_GROUP;
+	
+		if( (i = args.find("group_id")) == args.end() )
+			msg->group_id = OFPG_ALL;
+		else
+			msg->group_id = (uint32_t)atoi(i->second.c_str());
+
+	
+		return (ofl_msg_header*)msg;
+	}
+	
+	Inter_group_stats::Inter_group_stats()
+	{ 
+		_addit_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("group_id"),e_Num) );
+	}
 	//======================================
+	builder_name Inter_port_desc::name()
+	{		
+		return "port_desc";
+	}
+	
+	bool Inter_port_desc::is_modify() const
+	{
+		return false;
+	}
+	
+	struct ofl_msg_header * Inter_port_desc::request_msg_creator(const request_arguments& args)
+	{
+		check_args(args);
+		
+		request_arguments::const_iterator i;
+		
+		struct ofl_msg_multipart_request_header*  msg = new ofl_msg_multipart_request_header;
+		msg->header.type = OFPT_MULTIPART_REQUEST;
+		msg->type = OFPMP_PORT_DESC;
+
+		return (ofl_msg_header*)msg;
+	}
+	//======================================
+	builder_name Inter_group_desc::name()
+	{		
+		return "group_desc";
+	}
+	
+	bool Inter_group_desc::is_modify() const
+	{
+		return false;
+	}
+	
+	struct ofl_msg_header * Inter_group_desc::request_msg_creator(const request_arguments& args)
+	{
+		check_args(args);
+		
+		request_arguments::const_iterator i;
+		
+		struct ofl_msg_multipart_request_header*  msg = new ofl_msg_multipart_request_header;
+		msg->header.type = OFPT_MULTIPART_REQUEST;
+		msg->type = OFPMP_GROUP_DESC;
+
+		return (ofl_msg_header*)msg;
+	}
+	//======================================
+	builder_name Inter_group_features::name()
+	{		
+		return "group_features";
+	}
+	
+	bool Inter_group_features::is_modify() const
+	{
+		return false;
+	}
+	
+	struct ofl_msg_header * Inter_group_features::request_msg_creator(const request_arguments& args)
+	{
+		check_args(args);
+		
+		request_arguments::const_iterator i;
+		
+		struct ofl_msg_multipart_request_header*  msg = new ofl_msg_multipart_request_header;
+		msg->header.type = OFPT_MULTIPART_REQUEST;
+		msg->type = OFPMP_GROUP_FEATURES;
+
+		return (ofl_msg_header*)msg;
+	}
+		//======================================
+	Inter_queue_config::Inter_queue_config()
+	{
+		_addit_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("port"),e_Num) );	
+	}
+	
+	builder_name Inter_queue_config::name()
+	{		
+		return "queue_config";
+	}
+	
+	bool Inter_queue_config::is_modify() const
+	{
+		return false;
+	}
+	
+	struct ofl_msg_header * Inter_queue_config::request_msg_creator(const request_arguments& args)
+	{
+		check_args(args);
+		
+		request_arguments::const_iterator i;
+		
+		struct ofl_msg_queue_get_config_request*  msg = new ofl_msg_queue_get_config_request;
+		msg->header.type= OFPT_QUEUE_GET_CONFIG_REQUEST;
+
+		if( (i = args.find("port") ) == args.end() )
+			msg->port = OFPP_ANY;
+		else
+			msg->port = (uint32_t)atoi( i->second.c_str() );
+		
+		return (ofl_msg_header*)msg;
+	}
+	
+	//======================================
+	Inter_meter_stats::Inter_meter_stats()
+	{
+		_addit_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("meter_id"),e_Num) );	
+	}
+	
+	builder_name Inter_meter_stats::name()
+	{		
+		return "meter_stats";
+	}
+	
+	bool Inter_meter_stats::is_modify() const
+	{
+		return false;
+	}
+	
+	struct ofl_msg_header * Inter_meter_stats::request_msg_creator(const request_arguments& args)
+	{
+		check_args(args);
+		
+		request_arguments::const_iterator i;
+		
+		struct ofl_msg_multipart_meter_request*  msg = new ofl_msg_multipart_meter_request;
+		msg->header.header.type = OFPT_MULTIPART_REQUEST;
+		msg->header.type = OFPMP_METER;
+
+		if( (i = args.find("meter_id") ) == args.end() )
+			msg->meter_id = OFPM_ALL;
+		else
+			msg->meter_id = (uint32_t)atoi( i->second.c_str() );
+		
+		return (ofl_msg_header*)msg;
+	}
+		//======================================
+	Inter_meter_config::Inter_meter_config()
+	{
+		_addit_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("meter_id"),e_Num) );	
+	}
+	
+	builder_name Inter_meter_config::name()
+	{		
+		return "meter_config";
+	}
+	
+	bool Inter_meter_config::is_modify() const
+	{
+		return false;
+	}
+	
+	struct ofl_msg_header * Inter_meter_config::request_msg_creator(const request_arguments& args)
+	{
+		check_args(args);
+		
+		request_arguments::const_iterator i;
+		
+		struct ofl_msg_multipart_meter_request*  msg = new ofl_msg_multipart_meter_request;
+		msg->header.header.type = OFPT_MULTIPART_REQUEST;
+		msg->header.type = OFPMP_METER_CONFIG;
+
+		if( (i = args.find("meter_id") ) == args.end() )
+			msg->meter_id = OFPM_ALL;
+		else
+			msg->meter_id = (uint32_t)atoi( i->second.c_str() );
+		
+		return (ofl_msg_header*)msg;
+	}
+		//======================================
+	builder_name Inter_meter_features::name()
+	{		
+		return "meter_features";
+	}
+	
+	bool Inter_meter_features::is_modify() const
+	{
+		return false;
+	}
+	
+	struct ofl_msg_header * Inter_meter_features::request_msg_creator(const request_arguments& args)
+	{
+		check_args(args);
+		
+		request_arguments::const_iterator i;
+		
+		struct ofl_msg_multipart_request_header*  msg = new ofl_msg_multipart_request_header;
+		msg->header.type = OFPT_MULTIPART_REQUEST;
+		msg->type = OFPMP_METER_FEATURES;
+
+		return (ofl_msg_header*)msg;
+	}
+	//======================================
+	
 	builder_name Inter_flow_mod::name() 
 	{
 		return "flow_mod";

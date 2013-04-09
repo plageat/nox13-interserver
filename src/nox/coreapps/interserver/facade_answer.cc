@@ -168,6 +168,167 @@ namespace vigil
 		return CONTINUE;
 	}
 	
+	Disposition Facade_answer::handle_port_desc(const Event&e)
+	{
+		std::string response;
+		
+		const Ofp_msg_event& pi = assert_cast<const Ofp_msg_event&>(e);
+		struct ofl_msg_multipart_reply_port_desc *repl = (struct ofl_msg_multipart_reply_port_desc *)**pi.msg;
+	
+		for(int i = 0;  i < repl->stats_num; ++i)
+		{
+			response += ofl_structs_port_to_string(repl->stats[i]);
+			response += "\n\n";
+		}
+		
+		acceptResponse(response);
+		
+		return CONTINUE;
+	}
+	
+	Disposition Facade_answer::handle_queue_stats(const Event&e)
+	{
+		std::string response;
+		
+		const Ofp_msg_event& pi = assert_cast<const Ofp_msg_event&>(e);
+		struct ofl_msg_multipart_reply_queue *repl = (struct ofl_msg_multipart_reply_queue *)**pi.msg;
+
+		for(int i = 0;  i < repl->stats_num; ++i)
+		{
+			response += ofl_structs_queue_stats_to_string(repl->stats[i]);
+			response += "\n\n";
+		}
+		
+		acceptResponse(response);
+		
+		return CONTINUE;
+	}
+	
+	Disposition Facade_answer::handle_group_stats(const Event&e)
+	{
+		std::string response;
+		
+		const Ofp_msg_event& pi = assert_cast<const Ofp_msg_event&>(e);
+		struct ofl_msg_multipart_reply_group *repl = (struct ofl_msg_multipart_reply_group *)**pi.msg;
+
+		for(int i = 0;  i < repl->stats_num; ++i)
+		{
+			response += ofl_structs_group_stats_to_string(repl->stats[i]);
+			response += "\n\n";
+		}
+		
+		acceptResponse(response);
+		
+		return CONTINUE;
+	}
+	
+	Disposition Facade_answer::handle_group_desc(const Event&e)
+	{
+		std::string response;
+		
+		const Ofp_msg_event& pi = assert_cast<const Ofp_msg_event&>(e);
+		struct ofl_msg_multipart_reply_group_desc *repl = (struct ofl_msg_multipart_reply_group_desc *)**pi.msg;
+
+		for(int i = 0;  i < repl->stats_num; ++i)
+		{
+			response += ofl_structs_group_desc_stats_to_string(repl->stats[i],NULL);
+			response += "\n\n";
+		}
+		
+		acceptResponse(response);
+		
+		return CONTINUE;
+	}
+	
+	Disposition Facade_answer::handle_group_features(const Event&e)
+	{
+		const Ofp_msg_event& pi = assert_cast<const Ofp_msg_event&>(e);
+		struct ofl_msg_multipart_reply_group_features *repl = 
+											(struct ofl_msg_multipart_reply_group_features *)**pi.msg;
+		
+		std::string response = ofl_msg_to_string((struct ofl_msg_header*)repl,NULL );
+		
+		response += "\n\n";
+		
+		acceptResponse(response);
+		
+		return CONTINUE;
+	}
+	
+	Disposition Facade_answer::handle_queue_config(const Event&e)
+	{
+		std::stringstream sbuf;
+		
+		const Ofp_msg_event& pi = assert_cast<const Ofp_msg_event&>(e);
+		struct ofl_msg_queue_get_config_reply *repl = 
+											(struct ofl_msg_queue_get_config_reply *)**pi.msg;
+		
+		sbuf << "Port to be queried";
+		sbuf << (int)repl->port  << std::endl; // fix this,must be not int
+		
+		for(int i = 0;  i < repl->queues_num; ++i)
+		{
+			sbuf << ofl_structs_queue_to_string(repl->queues[i]);
+			sbuf << "\n\n";
+		}
+		
+		acceptResponse(sbuf.str());
+		
+		return CONTINUE;
+	}
+	
+	Disposition Facade_answer::handle_meter_stats(const Event&e)
+	{
+		std::string response;
+		
+		const Ofp_msg_event& pi = assert_cast<const Ofp_msg_event&>(e);
+		struct ofl_msg_multipart_reply_meter *repl = 
+											(struct ofl_msg_multipart_reply_meter *)**pi.msg;
+		
+		for(int i = 0;  i < repl->stats_num; ++i)
+		{
+			response += ofl_structs_meter_stats_to_string(repl->stats[i]);
+			response += "\n\n";
+		}
+		
+		acceptResponse(response);
+		
+		return CONTINUE;
+	}
+	
+	Disposition Facade_answer::handle_meter_config(const Event&e)
+	{
+		std::string response;
+		
+		const Ofp_msg_event& pi = assert_cast<const Ofp_msg_event&>(e);
+		struct ofl_msg_multipart_reply_meter_conf *repl = 
+											(struct ofl_msg_multipart_reply_meter_conf *)**pi.msg;
+
+		for(int i = 0;  i < repl->stats_num; ++i)
+		{
+			response += ofl_structs_meter_config_to_string(repl->stats[i]);
+			response += "\n\n";
+		}
+		
+		acceptResponse(response);
+		
+		return CONTINUE;
+	}
+	
+	Disposition Facade_answer::handle_meter_features(const Event&e)
+	{
+		const Ofp_msg_event& pi = assert_cast<const Ofp_msg_event&>(e);
+		struct ofl_msg_multipart_reply_meter_features *repl = 
+											(struct ofl_msg_multipart_reply_meter_features *)**pi.msg;
+		
+		std::string response = ofl_structs_meter_features_to_string(repl->features);
+		
+		response += "\n\n";
+		
+		acceptResponse(response);
+		
+		return CONTINUE;
+	}
 	
 	void Facade_answer::install()
 	{
@@ -194,6 +355,33 @@ namespace vigil
 							
 		register_handler(Ofp_msg_event::get_stats_name(OFPMP_PORT_STATS), 
 							boost::bind(&Facade_answer::handle_port_stats, this, _1) );
+							
+		register_handler(Ofp_msg_event::get_stats_name(OFPMP_PORT_DESC), 
+							boost::bind(&Facade_answer::handle_port_desc, this, _1) );
+							
+		register_handler(Ofp_msg_event::get_stats_name(OFPMP_QUEUE), 
+							boost::bind(&Facade_answer::handle_queue_stats, this, _1) );
+							
+		register_handler(Ofp_msg_event::get_stats_name(OFPMP_GROUP), 
+							boost::bind(&Facade_answer::handle_group_stats, this, _1) );
+		
+		register_handler(Ofp_msg_event::get_stats_name(OFPMP_GROUP_DESC), 
+							boost::bind(&Facade_answer::handle_group_stats, this, _1) );
+		
+		register_handler(Ofp_msg_event::get_stats_name(OFPMP_GROUP_FEATURES), 
+							boost::bind(&Facade_answer::handle_group_features, this, _1) );
+							
+		register_handler(Ofp_msg_event::get_stats_name(OFPMP_METER), 
+							boost::bind(&Facade_answer::handle_meter_stats, this, _1) );
+							
+		register_handler(Ofp_msg_event::get_stats_name(OFPMP_METER_CONFIG), 
+							boost::bind(&Facade_answer::handle_meter_config, this, _1) );
+		// currently not supported				
+		//register_handler(Ofp_msg_event::get_stats_name(OFPMP_METER_FEATURES), 
+			//				boost::bind(&Facade_answer::handle_meter_features, this, _1) );
+			
+		register_handler(Ofp_msg_event::get_name(OFPT_QUEUE_GET_CONFIG_REPLY), 
+							boost::bind(&Facade_answer::handle_queue_config, this, _1) );
 	}
 	
 	void Facade_answer::getInstance(const container::Context* ctxt, 

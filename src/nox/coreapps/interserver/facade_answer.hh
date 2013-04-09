@@ -41,6 +41,24 @@ namespace vigil
 		Disposition handle_agr_flow_info(const Event&);
 		
 		Disposition handle_port_stats(const Event&);
+		
+		Disposition handle_port_desc(const Event&);
+		
+		Disposition handle_queue_stats(const Event&);
+		
+		Disposition handle_group_stats(const Event&);
+		
+		Disposition handle_group_desc(const Event&);
+		
+		Disposition handle_group_features(const Event&);
+		
+		Disposition handle_meter_stats(const Event&);
+		
+		Disposition handle_meter_config(const Event&);
+		
+		Disposition handle_meter_features(const Event&);
+		
+		Disposition handle_queue_config(const Event&);
   };
   
 };

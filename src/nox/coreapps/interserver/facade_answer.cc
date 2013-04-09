@@ -366,7 +366,7 @@ namespace vigil
 							boost::bind(&Facade_answer::handle_group_stats, this, _1) );
 		
 		register_handler(Ofp_msg_event::get_stats_name(OFPMP_GROUP_DESC), 
-							boost::bind(&Facade_answer::handle_group_stats, this, _1) );
+							boost::bind(&Facade_answer::handle_group_desc, this, _1) );
 		
 		register_handler(Ofp_msg_event::get_stats_name(OFPMP_GROUP_FEATURES), 
 							boost::bind(&Facade_answer::handle_group_features, this, _1) );

@@ -128,7 +128,7 @@ namespace vigil
 				port = (uint32_t) atoi( a_out_port->second.c_str() );
 			
 			acts->CreateOutput(port);
-			
+			std::cout << "Create output action to port OK!" <<std::endl;
 			return acts;
 		}
 		
@@ -380,7 +380,7 @@ namespace vigil
 		request_arguments::const_iterator i = args.find("instr_type");
 		if(i == args.end())
 			throw std::runtime_error("missing instr_type field");
-		
+	
 		if(i->second == "goto_table" )
 		{
 			request_arguments::const_iterator table_id = args.find("goto_id");
@@ -1302,5 +1302,103 @@ namespace vigil
 		mod->AddInstructions( instrBuilder.construct_instruction(args) );
 
 		return (ofl_msg_header*)&mod->fm_msg;
+	}
+		//======================================
+	
+	builder_name Inter_group_mod::name() 
+	{
+		return "group_mod";
+	}
+	
+	bool Inter_group_mod::is_modify() const
+	{
+		return true;
+	}
+	
+	Inter_group_mod::Inter_group_mod()
+	{
+		_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("command"),e_String) );
+		_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("group_type"),e_String) );
+		
+		_addit_args = actionBuilder.get_action_args();
+		_addit_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("weight"),e_Num) );
+		_addit_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("watch_port"),e_Num) );
+		_addit_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("watch_group"),e_Num) );
+		_addit_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("group_id"),e_Num) );
+	}
+	
+	struct ofl_msg_header* Inter_group_mod::request_msg_creator(const request_arguments& args)
+	{
+		check_args(args);
+		
+		request_arguments::const_iterator i;
+		
+		struct ofl_msg_group_mod *msg = new ofl_msg_group_mod;
+		struct ofl_bucket **bucket = new ofl_bucket*[1];
+		bucket[0] = new ofl_bucket;
+		
+		enum ofp_group_mod_command command;
+		uint8_t type;
+		uint32_t group_id;
+		uint16_t weight;
+		uint32_t watch_port;
+		uint32_t watch_group;
+		
+		std::string value = args.find("command")->second;
+		
+		if(value  == "add")
+			command = OFPGC_ADD;
+		else if(value == "modify")
+				command = OFPGC_MODIFY;
+		else if(value == "delete")
+				command = OFPGC_DELETE;
+		else
+			std::runtime_error("Invalid command, must be add, modify or delete!\n");
+			
+		value = args.find("group_type")->second;
+		
+		if(value  == "all")
+			type = OFPGT_ALL;
+		else if(value == "select")
+				type = OFPGT_SELECT;
+		else if(value == "indirect")
+				type = OFPGT_INDIRECT;
+		else if(value == "fast_failover")
+				type = OFPGT_FF;
+		else
+			std::runtime_error("Invalid group_type!\n");
+		
+		if( (i = args.find("group_id") ) == args.end() )
+			group_id = 0;
+		else
+			group_id = (uint32_t)atoi( i->second.c_str() );
+		if( (i = args.find("weight") ) == args.end() )
+			weight = 0;
+		else
+			weight = (uint16_t)atoi( i->second.c_str() );	
+		if( (i = args.find("watch_port") ) == args.end() )
+			watch_port = 0;
+		else
+			watch_port = (uint32_t)atoi(i->second.c_str());
+		if( (i = args.find("watch_group") ) == args.end() )
+			watch_group = 0;
+		else
+			watch_group = (uint32_t)atoi(i->second.c_str());
+
+		Actions * acts = actionBuilder.construct_action(args);
+		(*bucket)->actions = acts->acts;
+		(*bucket)->actions_num = acts->act_num;
+		(*bucket)->weight = weight;
+		(*bucket)->watch_port = watch_port;
+		(*bucket)->watch_group = watch_group;
+		
+		msg->header.type = OFPT_GROUP_MOD;
+		msg->buckets = bucket;
+		msg->buckets_num = 1;
+		msg->command = command;
+		msg->type = type;
+		msg->group_id = group_id;
+
+		return (ofl_msg_header*)msg;
 	}
 };

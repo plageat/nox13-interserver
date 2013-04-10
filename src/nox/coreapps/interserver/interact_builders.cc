@@ -24,10 +24,6 @@
 #define FIND_IF_EXISTS(args,s,value) ( ( EXISTS_AKEY( (args) ,(s)) )  &&  \
 		( (value) = FIND_AVALUE( (args), (s) ), true ) )
 
-//#define FIND_IF_EXISTS(args,s,key,value) ( ( (json_object* tmp17_df = json::get_dict_value( (args).get(), (s) ) ) \
-	//										!= NULL ) &&  ( ( (value) = tmp17_df->get_string(true).c_str() ), \
-			//								(key) = (s),  true  ) ) ) 
-
 namespace vigil
 {	
 	using namespace vigil::container;    
@@ -548,6 +544,75 @@ namespace vigil
 		buck->weight = weight;
 		
 		return buck;
+	}
+	
+	//=============================================================================
+	
+	arguments_list Meter_band_builder::_band_tags = boost::assign::map_list_of ("meter_type",e_String)
+				("rate",e_Num) ("burst_size",e_Num) ("prec_level",e_Num);
+	
+	arguments_list Meter_band_builder::get_band_args()
+	{
+		return _band_tags;
+	}
+	
+	struct ofl_meter_band_header * Meter_band_builder::construct_band(const json_object* args)
+	{
+		std::string value;
+		
+		struct ofl_meter_band_header *band = NULL;
+	
+		uint16_t meter_type;
+		uint32_t rate;
+		uint32_t burst_size;
+		uint8_t prec_level; 
+
+		if( FIND_IF_EXISTS(args,"rate",value) )
+			rate = (uint32_t)atoi( value.c_str() );
+		else
+			std::runtime_error("missing rate field\n");
+			
+		if( FIND_IF_EXISTS(args, "burst_size", value) )
+			burst_size = (uint32_t)atoi( value.c_str() );
+		else
+			std::runtime_error("missing burst_size field\n");
+	
+		if( FIND_IF_EXISTS(args, "meter_type", value) == false)
+			std::runtime_error("missing meter_type field\n");
+
+		if(value  == "drop")
+				meter_type = OFPMBT_DROP;
+		else if(value == "dscp_remark")
+				meter_type = OFPMBT_DSCP_REMARK;
+		else
+			std::runtime_error("Invalid meter_type field!\n");
+	
+		switch(meter_type)
+		{
+			case OFPMBT_DROP:
+			{
+				band = (struct ofl_meter_band_header*) xmalloc( sizeof (ofl_meter_band_drop) );
+				break;
+			}
+			case OFPMBT_DSCP_REMARK:
+			{
+				if( FIND_IF_EXISTS(args,"prec_level",value) )
+					prec_level = (uint8_t)atoi( value.c_str() );
+				else
+					std::runtime_error("missing prec_level field\n");
+					
+				band = (struct ofl_meter_band_header*) xmalloc( sizeof (ofl_meter_band_dscp_remark) );
+				
+				((struct ofl_meter_band_dscp_remark*)band)->prec_level = prec_level;
+				break;
+			}
+		};
+		
+		band->burst_size = burst_size;
+		band->rate = rate;
+		band->type = meter_type;
+		
+		return band;
 	}
 	
 	//=============================================================================
@@ -1484,9 +1549,12 @@ namespace vigil
 	{
 		_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("command"),e_String) );
 		_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("group_type"),e_String) );
+		_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("group_id"),e_Num) );
 		
 		_addit_args = Bucket_fields_builder::get_bucket_args();
-		_addit_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("group_id"),e_Num) );
+		
+		_addit_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("buckets"),e_Num) );
+		
 	}
 	
 	struct ofl_msg_header* Inter_group_mod::request_msg_creator(const interact_args& args)
@@ -1525,10 +1593,7 @@ namespace vigil
 		else
 			std::runtime_error("Invalid group_type!\n");
 		
-		if( FIND_IF_EXISTS(args.get(), "group_id",value) == false )
-			group_id = 0;
-		else
-			group_id = (uint32_t)atoi( value.c_str() );
+		group_id = (uint32_t)atoi( FIND_AVALUE(args.get(),"group_id") );
 			
 		// buckets construction
 		struct ofl_bucket **buckets = (struct ofl_bucket**)xmalloc( sizeof(struct ofl_bucket*) );
@@ -1558,7 +1623,7 @@ namespace vigil
 
 		return (ofl_msg_header*)msg;
 	}
-	/*
+	
 	//======================================
 	
 	builder_name Inter_port_mod::name() 
@@ -1582,26 +1647,26 @@ namespace vigil
 
 	}
 	
-	struct ofl_msg_header* Inter_port_mod::request_msg_creator(const request_arguments& args)
+	struct ofl_msg_header* Inter_port_mod::request_msg_creator(const interact_args& args)
 	{
-		check_args(args);
+		//check_args(args);
 		
-		request_arguments::const_iterator i;
+		std::string value;
 		
 		struct ofl_msg_port_mod *msg = new ofl_msg_port_mod;
 	
-		uint32_t advertise = (uint32_t)atoi( args.find("advertise")->second.c_str() );
-		uint32_t port_no = (uint32_t)atoi( args.find("port")->second.c_str() );
-		uint32_t config = (uint32_t)atoi( args.find("config")->second.c_str() );
+		uint32_t advertise = (uint32_t)atoi( FIND_AVALUE(args.get(),"advertise") );
+		uint32_t port_no = (uint32_t)atoi( FIND_AVALUE(args.get(),"port") );
+		uint32_t config = (uint32_t)atoi( FIND_AVALUE(args.get(),"config") );
 		uint32_t mask;
 		
-		if( (i = args.find("mask") ) == args.end() )
+		if( FIND_IF_EXISTS(args.get(), "mask", value) == false )
 			mask = 0xffffffff;
 		else
-			mask = (uint32_t)atoi( i->second.c_str() );
+			mask = (uint32_t)atoi( value.c_str() );
 		
 		int len = ETH_ADDR_LEN;
-		ethernetaddr addr = ethernetaddr(args.find("hw_addr")->second);
+		ethernetaddr addr = ethernetaddr( FIND_AVALUE( args.get(), "hw_addr" ) );
 		memcpy(msg->hw_addr,addr.octet,len);
 		
 		msg->header.type = OFPT_PORT_MOD;
@@ -1629,31 +1694,27 @@ namespace vigil
 		_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("command"),e_String) );
 		_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("flags"),e_Num) );
 		_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("meter_id"),e_String) );
-		_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("meter_type"),e_String) );
-		_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("rate"),e_Num) );
-		_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("burst_size"),e_Num) );
 		
-		_addit_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("prec_level"),e_Num) );
-
+		_addit_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("meter_bands"),e_String) );
 	}
 	
-	struct ofl_msg_header* Inter_meter_mod::request_msg_creator(const request_arguments& args)
+	struct ofl_msg_header* Inter_meter_mod::request_msg_creator(const interact_args& args)
 	{
-		check_args(args);
+		//check_args(args);
 		
-		request_arguments::const_iterator i;
+		std::string value;
 		
 		struct ofl_msg_meter_mod *msg = new ofl_msg_meter_mod;
 	
 		uint16_t command;
 		uint16_t flags;
-		uint16_t meter_type;
+		//uint16_t meter_type;
 		uint32_t meter_id;
-		uint32_t rate;
-		uint32_t burst_size;
-		uint8_t prec_level; 
+		//uint32_t rate;
+		//uint32_t burst_size;
+		//uint8_t prec_level; 
 		
-		std::string value = args.find("command")->second;
+		value = FIND_AVALUE( args.get(), "command" );
 		
 		if(value  == "add")
 				command = OFPMC_ADD;
@@ -1664,11 +1725,11 @@ namespace vigil
 		else
 			std::runtime_error("Invalid command!\n");
 			
-		flags =  (uint16_t)atoi( args.find("flags")->second.c_str() );
-		rate = (uint32_t)atoi( args.find("rate")->second.c_str() );
-		burst_size = (uint32_t)atoi( args.find("burst_size")->second.c_str() );
+		flags =  (uint16_t)atoi( FIND_AVALUE(args.get(),"flags") );
+		//rate = (uint32_t)atoi( args.find("rate")->second.c_str() );
+		//burst_size = (uint32_t)atoi( args.find("burst_size")->second.c_str() );
 		
-		value = args.find("meter_id")->second;
+		value = FIND_AVALUE( args.get(), "meter_id" );
 		
 		if(value  == "slowpath")
 				meter_id = OFPM_SLOWPATH;
@@ -1678,51 +1739,34 @@ namespace vigil
 				meter_id = OFPM_ALL;
 		else
 			meter_id = (uint32_t)atoi( value.c_str() ); // todo
-			
-		value = args.find("meter_type")->second;
 		
-		if(value  == "drop")
-				meter_type = OFPMBT_DROP;
-		else if(value == "dscp_remark")
-				meter_type = OFPMBT_DSCP_REMARK;
-		// future planing
-		//else if(value == "experementer")
-				//type = OFPMBT_EXPERIMENTER;
-		else
-			std::runtime_error("Invalid meter_type field!\n");
+		// meter bands construction
+		struct ofl_meter_band_header ** bands = (struct ofl_meter_band_header**)xmalloc(sizeof (struct ofl_meter_band_header*));
+		int bands_num = 0;
 		
-		if( (i = args.find("prec_level") ) == args.end() )
-			prec_level = 0;
-		else
-			prec_level = (uint8_t)atoi( i->second.c_str() );
-		
-		struct ofl_meter_band_header ** band = new ofl_meter_band_header*[1];
-	
-		switch(meter_type)
+		if ( FIND_IF_EXISTS(args.get(),"meter_bands",value) )
 		{
-			case OFPMBT_DROP:
+			ssize_t len = value.size();
+			json_object* a = new json_object((const uint8_t*)value.c_str(),len);
+			json_array* ar = (json_array*)a->object;
+			BOOST_FOREACH(const json_array::value_type& p, *ar)
 			{
-				band[0] = (ofl_meter_band_header*) new ofl_meter_band_drop;
-				break;
+				struct ofl_meter_band_header* band; 
+				band =  Meter_band_builder::construct_band( p);
+				if(bands_num)
+					bands = (struct ofl_meter_band_header**)
+										xrealloc(bands, sizeof(struct ofl_meter_band_header*) * (bands_num + 1));
+				bands[ bands_num++ ] = band;
 			}
-			case OFPMBT_DSCP_REMARK:
-			{
-				band[0] = (ofl_meter_band_header*) new ofl_meter_band_dscp_remark;
-				((struct ofl_meter_band_dscp_remark*)band[0])->prec_level = prec_level;
-				break;
-			}
-		};
-		band[0]->burst_size = burst_size;
-		band[0]->rate = rate;
-		band[0]->type = meter_type;
+		}
 		
-		msg->bands = band;
+		msg->bands = bands;
 		msg->command = command;
 		msg->header.type = OFPT_METER_MOD;
 		msg->flags = flags;
-		msg->meter_bands_num = 1;
+		msg->meter_bands_num = bands_num;
 		msg->meter_id = meter_id;
 		
 		return (ofl_msg_header*)msg;
-	}*/
+	}
 };

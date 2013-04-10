@@ -53,6 +53,15 @@ namespace vigil
 		static struct ofl_bucket * construct_bucket(const json_object*, struct ofl_bucket *);
 		static arguments_list get_bucket_args();
   };
+  
+  class Meter_band_builder : boost::noncopyable
+  {
+	private:
+		static arguments_list _band_tags;
+	public:  
+		static struct ofl_meter_band_header * construct_band(const json_object*);
+		static arguments_list get_band_args();
+  };
 	
   class Inter_sw_config : public Interactor 
   {
@@ -288,13 +297,13 @@ namespace vigil
 		
 		virtual ~Inter_group_mod() {};
   };
-  /*
+  
   class Inter_port_mod: public Interactor
   {
 	public:
 		Inter_port_mod();
 		
-		struct ofl_msg_header * request_msg_creator(const request_arguments& );
+		struct ofl_msg_header * request_msg_creator(const interact_args& );
 		bool is_modify() const;
 		static builder_name name(); 
 		
@@ -306,12 +315,12 @@ namespace vigil
 	public:
 		Inter_meter_mod();
 		
-		struct ofl_msg_header * request_msg_creator(const request_arguments& );
+		struct ofl_msg_header * request_msg_creator(const interact_args& );
 		bool is_modify() const;
 		static builder_name name(); 
 		
 		virtual ~Inter_meter_mod() {};
-  };*/
+  };
 };
 
 #endif

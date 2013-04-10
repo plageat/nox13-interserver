@@ -1,0 +1,18 @@
+{
+    "components": [
+        {
+            "name": "interserver" ,
+            "library": "interserver" 
+        },
+		
+		{
+            "name": "request_processor" ,
+            "library": "request_processor" 
+        },
+        
+        {
+			"name": "inter_sw_config" ,
+			"library" : "inter_sw_config" 
+        }
+    ]
+}

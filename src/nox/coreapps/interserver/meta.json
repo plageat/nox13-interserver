@@ -1,0 +1,26 @@
+ {
+    "components": [
+		{
+            "name": "request_processor" ,
+            "library": "request_processor"
+        },
+		{
+			"name": "msg_resolver" ,
+            "library": "msg_resolver"
+		},
+		{
+			"name": "facade_answer" ,
+            "library": "facade_answer"
+		},
+		{
+            "name": "interserver" ,
+            "library": "interserver" ,
+			"dependencies": [
+                "msg_resolver",
+				"request_processor",
+				"facade_answer"
+            ]
+        }
+    ]
+}
+	

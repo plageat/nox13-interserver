@@ -371,21 +371,20 @@ namespace vigil
 		return acts;
 	}
 	
+	//=============================================================================
 
 	arguments_list Instruction_fields_builder::_instr_tags = boost::assign::map_list_of ("instr_type",e_String)
 									("goto_id", e_Num) ("metadata",e_Num) ("metadata_mask",e_Num)("meter",e_Num)
 									("action_set",e_String);
 			
-	
 	arguments_list Instruction_fields_builder::get_instr_args()
 	{
 		// todo
-		arguments_list ret_val;
-		ret_val.insert( ret_val.begin(), _instr_tags.begin(), _instr_tags.end() );
 		// instructions includes action tags as them part of instructions
-		//ret_val.insert( ret_val.end(), _actionBuilder::get_action_args().begin(),
-		//								 _actionBuilder::get_action_args().end())
-		return _instr_tags;
+		arguments_list ret_val = Action_fields_builder::get_action_args();
+		ret_val.insert( ret_val.begin(), _instr_tags.begin(), _instr_tags.end() );
+		
+		return ret_val;
 	}
 	
 	
@@ -495,6 +494,63 @@ namespace vigil
 		return instr;
 	}
 	
+	//=============================================================================
+	
+	arguments_list Bucket_fields_builder::_bucket_tags = boost::assign::map_list_of ("weight",e_Num)
+														("watch_port",e_Num) ("watch_group",e_Num);
+	
+	arguments_list Bucket_fields_builder::get_bucket_args()
+	{
+		// need optimization!
+		arguments_list ret_val = Action_fields_builder::get_action_args();
+		ret_val.insert( ret_val.begin(), _bucket_tags.begin(), _bucket_tags.end() );
+		
+		return ret_val;
+	}
+	
+	struct ofl_bucket * Bucket_fields_builder::construct_bucket(const json_object* args,struct ofl_bucket * buck)
+	{
+		std::string value;
+		
+		uint16_t weight;
+		uint32_t watch_port;
+		uint32_t watch_group;
+		
+		if( FIND_IF_EXISTS(args,"weight", value) == false )
+			weight = 0;
+		else
+			weight = (uint16_t)atoi( value.c_str() );	
+		if( FIND_IF_EXISTS(args,"watch_port", value) == false )
+			watch_port = 0;
+		else
+			watch_port = (uint32_t)atoi( value.c_str() );
+		if( FIND_IF_EXISTS(args,"watch_group", value) == false)
+			watch_group = 0;
+		else
+			watch_group = (uint32_t)atoi( value.c_str() );
+			
+		Actions *ac = new Actions();
+		if( FIND_IF_EXISTS(args,"action_set",value) )
+		{
+			ssize_t len = value.size();
+			json_object* a = new json_object((const uint8_t*)value.c_str(),len);
+			json_array* ar = (json_array*)a->object;
+			BOOST_FOREACH(const json_array::value_type& p, *ar)
+			{
+				ac =  Action_fields_builder::construct_action(p,ac);
+			}
+		}
+		
+		buck->actions = ac->acts;
+		buck->actions_num = ac->act_num;
+		buck->watch_group = watch_group;
+		buck->watch_port = watch_port;
+		buck->weight = weight;
+		
+		return buck;
+	}
+	
+	//=============================================================================
 	
 	namespace
 	{
@@ -710,6 +766,7 @@ namespace vigil
 					}
 					case 8:
 					{
+						std::cout << "Constructing match 8 byte: " << value << std::endl;
 						uint64_t value_b = (uint64_t)atoll(value.c_str());
 						
 						if( FIND_IF_EXISTS(args,value + "_mask",value_mask) == false )
@@ -869,26 +926,16 @@ namespace vigil
 	}
 	//===========================================
 	
-	builder_name Inter_flow_info::name()
-	{		
-		return "flow_info";
-	}
-	
-	bool Inter_flow_info::is_modify() const
+	namespace 
 	{
-		return false;
-	}
-	
-	struct ofl_msg_header * Inter_flow_info::request_msg_creator(const interact_args& args)
-	{		
+		struct ofl_msg_header* flow_information_req_creator(const interact_args& args,enum ofp_multipart_types type)
+		{
 			//check_args(args);
-			
-			std::cout << "Entering flow info builder...\n";
 			std::string value;
 	
 			struct ofl_msg_multipart_request_flow*  msg = new ofl_msg_multipart_request_flow;
 			msg->header.header.type = OFPT_MULTIPART_REQUEST;
-			msg->header.type = OFPMP_FLOW;
+			msg->header.type = type;
 	
 			if( FIND_IF_EXISTS(args.get(),"table_id",value) )
 				msg->table_id = (uint8_t)atoi( value.c_str() );
@@ -935,7 +982,23 @@ namespace vigil
 			}
 			
 			return (ofl_msg_header*)msg;
-		
+		}
+	}
+	
+	builder_name Inter_flow_info::name()
+	{		
+		return "flow_info";
+	}
+	
+	bool Inter_flow_info::is_modify() const
+	{
+		return false;
+	}
+	
+	struct ofl_msg_header * Inter_flow_info::request_msg_creator(const interact_args& args)
+	{		
+		//check_args(args);
+		return flow_information_req_creator(args,OFPMP_FLOW);
 	}
 	
 	Inter_flow_info::Inter_flow_info()
@@ -949,7 +1012,7 @@ namespace vigil
 		_addit_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("cookie_mask"),e_Num) );
 	}
 		//===========================================
-	/*
+	
 	builder_name Inter_flow_agr_info::name()
 	{		
 		return "agr_flow_info";
@@ -960,51 +1023,22 @@ namespace vigil
 		return false;
 	}
 	
-	struct ofl_msg_header * Inter_flow_agr_info::request_msg_creator(const request_arguments& args)
+	struct ofl_msg_header * Inter_flow_agr_info::request_msg_creator(const interact_args& args)
 	{
-		check_args(args);
-		
-		request_arguments::const_iterator i;
-		
-		struct ofl_msg_multipart_request_flow*  msg = new ofl_msg_multipart_request_flow;
-		msg->header.header.type = OFPT_MULTIPART_REQUEST;
-		msg->header.type = OFPMP_AGGREGATE;
-	
-		if( (i = args.find("table_id")) == args.end() )
-			msg->table_id = OFPTT_ALL;
-		else
-			msg->table_id = (uint8_t)atoi(i->second.c_str());
-		if( (i = args.find("out_port") ) == args.end() )
-			msg->out_port = OFPP_ANY;
-		else
-			msg->out_port = (uint32_t)atoi(i->second.c_str());
-		if( (i = args.find("out_group")) == args.end() )
-			msg->out_group = OFPG_ANY;
-		else	
-			msg->out_group = (uint32_t)atoi(i->second.c_str());
-		if( (i = args.find("cookie")) == args.end() )
-			msg->cookie = 0;
-		else
-			msg->cookie = (uint64_t)atoll(i->second.c_str());
-		if( (i = args.find("cookie_mask")) == args.end() )
-			msg->cookie_mask = 0;
-		else
-			msg->cookie_mask = (uint64_t)atoll(i->second.c_str());
-
-		msg->match =  matchBuilder.construct_match(args);
-	
-		return (ofl_msg_header*)msg;
+		//check_args(args);
+		return flow_information_req_creator(args, OFPMP_AGGREGATE);
 	}
 	
 	Inter_flow_agr_info::Inter_flow_agr_info()
 	{
-		_addit_args = matchBuilder.get_match_args(); 
+		_addit_args = Match_fields_builder::get_match_args(); 
 		_addit_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("table_id"),e_Num) );
 		_addit_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("out_port"),e_Num) );
 		_addit_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("out_group"),e_Num) );
 		_addit_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("cookie"),e_Num) );
 		_addit_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("cookie_mask"),e_Num) );
 	}
+	
 	//=======================================
 	builder_name Inter_port_stats::name()
 	{		
@@ -1016,20 +1050,20 @@ namespace vigil
 		return false;
 	}
 	
-	struct ofl_msg_header * Inter_port_stats::request_msg_creator(const request_arguments& args)
+	struct ofl_msg_header * Inter_port_stats::request_msg_creator(const interact_args& args)
 	{
-		check_args(args);
+		//check_args(args);
 		
-		request_arguments::const_iterator i;
+		std::string port;
 		
 		struct ofl_msg_multipart_request_port*  msg = new ofl_msg_multipart_request_port;
 		msg->header.header.type = OFPT_MULTIPART_REQUEST;
 		msg->header.type = OFPMP_PORT_STATS;
 	
-		if( (i = args.find("port")) == args.end() )
+		if( FIND_IF_EXISTS(args.get(), "port", port) == false )
 			msg->port_no = OFPP_ANY;
 		else
-			msg->port_no = (uint32_t)atoi(i->second.c_str());
+			msg->port_no = (uint32_t)atoi( port.c_str() );
 
 	
 		return (ofl_msg_header*)msg;
@@ -1050,24 +1084,24 @@ namespace vigil
 		return false;
 	}
 	
-	struct ofl_msg_header * Inter_queue_stats::request_msg_creator(const request_arguments& args)
+	struct ofl_msg_header * Inter_queue_stats::request_msg_creator(const interact_args& args)
 	{
-		check_args(args);
+		//check_args(args);
 		
-		request_arguments::const_iterator i;
+		std::string value;
 		
 		struct ofl_msg_multipart_request_queue*  msg = new ofl_msg_multipart_request_queue;
 		msg->header.header.type = OFPT_MULTIPART_REQUEST;
 		msg->header.type = OFPMP_QUEUE;
 	
-		if( (i = args.find("port")) == args.end() )
+		if( FIND_IF_EXISTS(args.get(), "port", value ) == false )
 			msg->port_no = OFPP_ANY;
 		else
-			msg->port_no = (uint32_t)atoi(i->second.c_str());
-		if( (i = args.find("queue_id")) == args.end() )
+			msg->port_no = (uint32_t)atoi( value.c_str() );
+		if( FIND_IF_EXISTS(args.get(), "queue_id", value ) == false )
 			msg->queue_id = OFPQ_ALL;
 		else
-			msg->queue_id = (uint32_t)atoi(i->second.c_str());
+			msg->queue_id = (uint32_t)atoi( value.c_str() );
 
 	
 		return (ofl_msg_header*)msg;
@@ -1089,20 +1123,20 @@ namespace vigil
 		return false;
 	}
 	
-	struct ofl_msg_header * Inter_group_stats::request_msg_creator(const request_arguments& args)
+	struct ofl_msg_header * Inter_group_stats::request_msg_creator(const interact_args& args)
 	{
-		check_args(args);
+		//check_args(args);
 		
-		request_arguments::const_iterator i;
+		std::string group_id;
 		
 		struct ofl_msg_multipart_request_group*  msg = new ofl_msg_multipart_request_group;
 		msg->header.header.type = OFPT_MULTIPART_REQUEST;
 		msg->header.type = OFPMP_GROUP;
 	
-		if( (i = args.find("group_id")) == args.end() )
+		if( FIND_IF_EXISTS(args.get(), "group_id", group_id ) == false )
 			msg->group_id = OFPG_ALL;
 		else
-			msg->group_id = (uint32_t)atoi(i->second.c_str());
+			msg->group_id = (uint32_t)atoi( group_id.c_str() );
 
 	
 		return (ofl_msg_header*)msg;
@@ -1123,11 +1157,9 @@ namespace vigil
 		return false;
 	}
 	
-	struct ofl_msg_header * Inter_port_desc::request_msg_creator(const request_arguments& args)
+	struct ofl_msg_header * Inter_port_desc::request_msg_creator(const interact_args& args)
 	{
-		check_args(args);
-		
-		request_arguments::const_iterator i;
+		//check_args(args);
 		
 		struct ofl_msg_multipart_request_header*  msg = new ofl_msg_multipart_request_header;
 		msg->header.type = OFPT_MULTIPART_REQUEST;
@@ -1146,11 +1178,9 @@ namespace vigil
 		return false;
 	}
 	
-	struct ofl_msg_header * Inter_group_desc::request_msg_creator(const request_arguments& args)
+	struct ofl_msg_header * Inter_group_desc::request_msg_creator(const interact_args& args)
 	{
-		check_args(args);
-		
-		request_arguments::const_iterator i;
+		//check_args(args);
 		
 		struct ofl_msg_multipart_request_header*  msg = new ofl_msg_multipart_request_header;
 		msg->header.type = OFPT_MULTIPART_REQUEST;
@@ -1169,11 +1199,9 @@ namespace vigil
 		return false;
 	}
 	
-	struct ofl_msg_header * Inter_group_features::request_msg_creator(const request_arguments& args)
+	struct ofl_msg_header * Inter_group_features::request_msg_creator(const interact_args& args)
 	{
-		check_args(args);
-		
-		request_arguments::const_iterator i;
+		//check_args(args);
 		
 		struct ofl_msg_multipart_request_header*  msg = new ofl_msg_multipart_request_header;
 		msg->header.type = OFPT_MULTIPART_REQUEST;
@@ -1197,24 +1225,44 @@ namespace vigil
 		return false;
 	}
 	
-	struct ofl_msg_header * Inter_queue_config::request_msg_creator(const request_arguments& args)
+	struct ofl_msg_header * Inter_queue_config::request_msg_creator(const interact_args& args)
 	{
-		check_args(args);
+		//check_args(args);
 		
-		request_arguments::const_iterator i;
+		std::string port;
 		
 		struct ofl_msg_queue_get_config_request*  msg = new ofl_msg_queue_get_config_request;
 		msg->header.type= OFPT_QUEUE_GET_CONFIG_REQUEST;
 
-		if( (i = args.find("port") ) == args.end() )
+		if( FIND_IF_EXISTS(args.get(), "port", port ) == false )
 			msg->port = OFPP_ANY;
 		else
-			msg->port = (uint32_t)atoi( i->second.c_str() );
+			msg->port = (uint32_t)atoi( port.c_str() );
 		
 		return (ofl_msg_header*)msg;
 	}
 	
 	//======================================
+	
+	namespace 
+	{
+		struct ofl_msg_header *	create_meter_request(const interact_args& args,enum ofp_multipart_types type )
+		{
+			std::string meter_id;
+		
+			struct ofl_msg_multipart_meter_request*  msg = new ofl_msg_multipart_meter_request;
+			msg->header.header.type = OFPT_MULTIPART_REQUEST;
+			msg->header.type = type;
+
+			if( FIND_IF_EXISTS(args.get(),"meter_id",meter_id) == false )
+				msg->meter_id = OFPM_ALL;
+			else
+				msg->meter_id = (uint32_t)atoi( meter_id.c_str() );
+			
+			return (ofl_msg_header*)msg;
+		}
+	}
+	
 	Inter_meter_stats::Inter_meter_stats()
 	{
 		_addit_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("meter_id"),e_Num) );	
@@ -1230,22 +1278,11 @@ namespace vigil
 		return false;
 	}
 	
-	struct ofl_msg_header * Inter_meter_stats::request_msg_creator(const request_arguments& args)
+	struct ofl_msg_header * Inter_meter_stats::request_msg_creator(const interact_args& args)
 	{
-		check_args(args);
+		//check_args(args);
 		
-		request_arguments::const_iterator i;
-		
-		struct ofl_msg_multipart_meter_request*  msg = new ofl_msg_multipart_meter_request;
-		msg->header.header.type = OFPT_MULTIPART_REQUEST;
-		msg->header.type = OFPMP_METER;
-
-		if( (i = args.find("meter_id") ) == args.end() )
-			msg->meter_id = OFPM_ALL;
-		else
-			msg->meter_id = (uint32_t)atoi( i->second.c_str() );
-		
-		return (ofl_msg_header*)msg;
+		return create_meter_request(args,OFPMP_METER);
 	}
 		//======================================
 	Inter_meter_config::Inter_meter_config()
@@ -1263,24 +1300,15 @@ namespace vigil
 		return false;
 	}
 	
-	struct ofl_msg_header * Inter_meter_config::request_msg_creator(const request_arguments& args)
+	struct ofl_msg_header * Inter_meter_config::request_msg_creator(const interact_args& args)
 	{
-		check_args(args);
+		//check_args(args);
 		
-		request_arguments::const_iterator i;
-		
-		struct ofl_msg_multipart_meter_request*  msg = new ofl_msg_multipart_meter_request;
-		msg->header.header.type = OFPT_MULTIPART_REQUEST;
-		msg->header.type = OFPMP_METER_CONFIG;
-
-		if( (i = args.find("meter_id") ) == args.end() )
-			msg->meter_id = OFPM_ALL;
-		else
-			msg->meter_id = (uint32_t)atoi( i->second.c_str() );
-		
-		return (ofl_msg_header*)msg;
+		return create_meter_request(args,OFPMP_METER_CONFIG);
 	}
-		//======================================
+	
+	//======================================
+	
 	builder_name Inter_meter_features::name()
 	{		
 		return "meter_features";
@@ -1291,11 +1319,9 @@ namespace vigil
 		return false;
 	}
 	
-	struct ofl_msg_header * Inter_meter_features::request_msg_creator(const request_arguments& args)
+	struct ofl_msg_header * Inter_meter_features::request_msg_creator(const interact_args& args)
 	{
-		check_args(args);
-		
-		request_arguments::const_iterator i;
+		//check_args(args);
 		
 		struct ofl_msg_multipart_request_header*  msg = new ofl_msg_multipart_request_header;
 		msg->header.type = OFPT_MULTIPART_REQUEST;
@@ -1303,7 +1329,7 @@ namespace vigil
 
 		return (ofl_msg_header*)msg;
 	}
-	*/
+	
 	//======================================
 	
 	builder_name Inter_flow_mod::name() 
@@ -1321,7 +1347,7 @@ namespace vigil
 		_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("command"),e_String) );
 		_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("instruction_set"),e_String) );
 		
-		//_addit_args = instrBuilder.get_instr_args();
+		_addit_args = Instruction_fields_builder::get_instr_args();
 		arguments_list match_args = Match_fields_builder::get_match_args();
 		_addit_args.insert(_addit_args.end(),match_args.begin(), match_args.end());
 		_addit_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("match_set"),e_String) );
@@ -1441,7 +1467,7 @@ namespace vigil
 		mod->AddInstructions(i);
 
 		return (ofl_msg_header*)&mod->fm_msg;
-	}/*
+	}
 		//======================================
 	
 	builder_name Inter_group_mod::name() 
@@ -1459,87 +1485,80 @@ namespace vigil
 		_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("command"),e_String) );
 		_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("group_type"),e_String) );
 		
-		_addit_args = actionBuilder.get_action_args();
-		_addit_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("weight"),e_Num) );
-		_addit_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("watch_port"),e_Num) );
-		_addit_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("watch_group"),e_Num) );
+		_addit_args = Bucket_fields_builder::get_bucket_args();
 		_addit_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("group_id"),e_Num) );
 	}
 	
-	struct ofl_msg_header* Inter_group_mod::request_msg_creator(const request_arguments& args)
+	struct ofl_msg_header* Inter_group_mod::request_msg_creator(const interact_args& args)
 	{
-		check_args(args);
+		//check_args(args);
 		
-		request_arguments::const_iterator i;
+		std::string value;
 		
 		struct ofl_msg_group_mod *msg = new ofl_msg_group_mod;
-		struct ofl_bucket **bucket = new ofl_bucket*[1];
-		bucket[0] = new ofl_bucket;
 		
 		enum ofp_group_mod_command command;
 		uint8_t type;
 		uint32_t group_id;
-		uint16_t weight;
-		uint32_t watch_port;
-		uint32_t watch_group;
 		
-		std::string value = args.find("command")->second;
+		value = FIND_AVALUE(args.get(),"command"); 
 		
-		if(value  == "add")
+		if( value  == "add")
 			command = OFPGC_ADD;
-		else if(value == "modify")
+		else if( value == "modify")
 				command = OFPGC_MODIFY;
-		else if(value == "delete")
+		else if( value == "delete")
 				command = OFPGC_DELETE;
 		else
 			std::runtime_error("Invalid command, must be add, modify or delete!\n");
 			
-		value = args.find("group_type")->second;
+		value = FIND_AVALUE( args.get(), "group_type" ); 
 		
-		if(value  == "all")
+		if( value  == "all" )
 			type = OFPGT_ALL;
-		else if(value == "select")
+		else if( value == "select" )
 				type = OFPGT_SELECT;
-		else if(value == "indirect")
+		else if( value == "indirect" )
 				type = OFPGT_INDIRECT;
-		else if(value == "fast_failover")
+		else if( value == "fast_failover" )
 				type = OFPGT_FF;
 		else
 			std::runtime_error("Invalid group_type!\n");
 		
-		if( (i = args.find("group_id") ) == args.end() )
+		if( FIND_IF_EXISTS(args.get(), "group_id",value) == false )
 			group_id = 0;
 		else
-			group_id = (uint32_t)atoi( i->second.c_str() );
-		if( (i = args.find("weight") ) == args.end() )
-			weight = 0;
-		else
-			weight = (uint16_t)atoi( i->second.c_str() );	
-		if( (i = args.find("watch_port") ) == args.end() )
-			watch_port = 0;
-		else
-			watch_port = (uint32_t)atoi(i->second.c_str());
-		if( (i = args.find("watch_group") ) == args.end() )
-			watch_group = 0;
-		else
-			watch_group = (uint32_t)atoi(i->second.c_str());
-
-		Actions * acts = actionBuilder.construct_action(args);
-		(*bucket)->actions = acts->acts;
-		(*bucket)->actions_num = acts->act_num;
-		(*bucket)->weight = weight;
-		(*bucket)->watch_port = watch_port;
-		(*bucket)->watch_group = watch_group;
+			group_id = (uint32_t)atoi( value.c_str() );
+			
+		// buckets construction
+		struct ofl_bucket **buckets = (struct ofl_bucket**)xmalloc( sizeof(struct ofl_bucket*) );
+		int buckets_num = 0;
+		
+		if ( FIND_IF_EXISTS(args.get(),"buckets",value) )
+		{
+			ssize_t len = value.size();
+			json_object* a = new json_object((const uint8_t*)value.c_str(),len);
+			json_array* ar = (json_array*)a->object;
+			BOOST_FOREACH(const json_array::value_type& p, *ar)
+			{
+				struct ofl_bucket* bucket = (struct ofl_bucket*)xmalloc( sizeof(struct ofl_bucket) ); 
+				bucket =  Bucket_fields_builder::construct_bucket(p,bucket);
+				if(buckets_num)
+					buckets = (struct ofl_bucket**) xrealloc(buckets, sizeof(struct ofl_bucket *) * (buckets_num + 1));
+				buckets[ buckets_num++ ] = bucket;
+			}
+		}
 		
 		msg->header.type = OFPT_GROUP_MOD;
-		msg->buckets = bucket;
-		msg->buckets_num = 1;
+		msg->buckets = buckets;
+		msg->buckets_num = buckets_num;
 		msg->command = command;
 		msg->type = type;
 		msg->group_id = group_id;
 
 		return (ofl_msg_header*)msg;
 	}
+	/*
 	//======================================
 	
 	builder_name Inter_port_mod::name() 

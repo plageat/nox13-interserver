@@ -60,7 +60,7 @@ namespace vigil
 		f = boost::bind(&InteractorCreator<Inter_flow_mod>::create);
 		this->_interactsFact.register_object(Inter_flow_mod::name(), f);
 		_res_ids.push_back(Inter_flow_mod::name());
-	/*	
+		
 		f = boost::bind(&InteractorCreator<Inter_flow_agr_info>::create);
 		this->_interactsFact.register_object(Inter_flow_agr_info::name(), f);
 		_res_ids.push_back(Inter_flow_agr_info::name());
@@ -88,7 +88,7 @@ namespace vigil
 		f = boost::bind(&InteractorCreator<Inter_group_features>::create);
 		this->_interactsFact.register_object(Inter_group_features::name(), f);
 		_res_ids.push_back(Inter_group_features::name());
-		
+	
 		f = boost::bind(&InteractorCreator<Inter_meter_stats>::create);
 		this->_interactsFact.register_object(Inter_meter_stats::name(), f);
 		_res_ids.push_back(Inter_meter_stats::name());
@@ -108,7 +108,7 @@ namespace vigil
 		f = boost::bind(&InteractorCreator<Inter_group_mod>::create);
 		this->_interactsFact.register_object(Inter_group_mod::name(), f);
 		_res_ids.push_back(Inter_group_mod::name());
-		
+		/*
 		f = boost::bind(&InteractorCreator<Inter_port_mod>::create);
 		this->_interactsFact.register_object(Inter_port_mod::name(), f);
 		_res_ids.push_back(Inter_port_mod::name());
@@ -135,22 +135,6 @@ namespace vigil
 			
 		return true;
 	}
-	/*
-	std::vector<std::string> Msg_resolver::give_arguments() const
-	{
-		if (_temp_ptr)
-			return this->_temp_ptr->arg_requires();
-		else
-			throw std::logic_error("Must call init_interactor first!");
-	}
-	
-	std::vector<std::string> Msg_resolver::give_additional_args() const
-	{
-		if (_temp_ptr)
-			return this->_temp_ptr->additional_args();
-		else
-			throw std::logic_error("Must call init_interactor first!");
-	}*/
 	
 	bool Msg_resolver::is_modify() const
 	{

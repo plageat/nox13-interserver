@@ -41,7 +41,7 @@ namespace vigil
 		std::vector<std::string> give_arguments() const;
 		std::vector<std::string> give_additional_args() const;
 		bool is_modify() const;
-		int resolve_request(const datapathid& did, const request_arguments&);	// must be call last!
+		int resolve_request(const datapathid& did, const boost::shared_ptr<json_object>&);	// must be call last!
 		
   };
   

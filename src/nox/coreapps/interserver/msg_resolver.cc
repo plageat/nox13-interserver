@@ -40,7 +40,7 @@ namespace vigil
 		f = boost::bind(&InteractorCreator<Inter_features_request>::create);
 		this->_interactsFact.register_object(Inter_features_request::name(), f);
 		_res_ids.push_back(Inter_features_request::name());
-		
+	
 		f = boost::bind(&InteractorCreator<Inter_table_features>::create);
 		this->_interactsFact.register_object(Inter_table_features::name(), f);
 		_res_ids.push_back(Inter_table_features::name());
@@ -60,7 +60,7 @@ namespace vigil
 		f = boost::bind(&InteractorCreator<Inter_flow_mod>::create);
 		this->_interactsFact.register_object(Inter_flow_mod::name(), f);
 		_res_ids.push_back(Inter_flow_mod::name());
-		
+	/*	
 		f = boost::bind(&InteractorCreator<Inter_flow_agr_info>::create);
 		this->_interactsFact.register_object(Inter_flow_agr_info::name(), f);
 		_res_ids.push_back(Inter_flow_agr_info::name());
@@ -115,7 +115,7 @@ namespace vigil
 		
 		f = boost::bind(&InteractorCreator<Inter_meter_mod>::create);
 		this->_interactsFact.register_object(Inter_meter_mod::name(), f);
-		_res_ids.push_back(Inter_meter_mod::name());
+		_res_ids.push_back(Inter_meter_mod::name());*/
 	}
 	
 	void Msg_resolver::getInstance(const container::Context* ctxt, 
@@ -135,7 +135,7 @@ namespace vigil
 			
 		return true;
 	}
-	
+	/*
 	std::vector<std::string> Msg_resolver::give_arguments() const
 	{
 		if (_temp_ptr)
@@ -150,7 +150,7 @@ namespace vigil
 			return this->_temp_ptr->additional_args();
 		else
 			throw std::logic_error("Must call init_interactor first!");
-	}
+	}*/
 	
 	bool Msg_resolver::is_modify() const
 	{
@@ -160,14 +160,14 @@ namespace vigil
 			throw std::logic_error("Must call init_interactor first!");	
 	}
 	
-	int Msg_resolver::resolve_request(const datapathid& did, const request_arguments& args)
+	int Msg_resolver::resolve_request(const datapathid& did, const boost::shared_ptr<json_object>& args)
 	{
 		if (_temp_ptr)
 		{
 			ofl_msg_header * msg = this->_temp_ptr->request_msg_creator(args);
 			// clear temp pointer
 			_temp_ptr.reset();
-
+	
 			return send_openflow_msg(did, (struct ofl_msg_header *)msg, 1/*xid*/, false/*block*/);
 		}
 		else

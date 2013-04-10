@@ -12,44 +12,37 @@ namespace vigil
   using namespace vigil::container; 
 
   typedef std::string builder_name;
-	
+
   class Match_fields_builder : boost::noncopyable
   {
 	private:
-		arguments_list _match_tags;
-		ofl_match_header *_m_header;
+		static arguments_list _match_tags;
+		// need 2 list for construct match handling...todo
+		static arguments_list _match_tags_ext;
 	public:  
-		Match_fields_builder();
-		~Match_fields_builder();
-		
-		ofl_match_header* construct_match(const request_arguments& );
-		const arguments_list& get_match_args() const;
-		
+		static Flow* construct_match(const json_object*, Flow* );
+		static arguments_list get_match_args();
   };
   
   class Action_fields_builder : boost::noncopyable
   {
 	private:
-		arguments_list _action_tags;
+		static arguments_list _action_tags;
+		static arguments_list _action_tags_ext;
 	public:
-		Action_fields_builder();
-		~Action_fields_builder();
 		
-		Actions* construct_action(const request_arguments&);
-		const arguments_list& get_action_args() const;
+		static Actions* construct_action(const json_object*, Actions*);
+		static arguments_list get_action_args();
   };
 
   class Instruction_fields_builder : boost::noncopyable
   {
 	private:
-		arguments_list _instr_tags;
-		Action_fields_builder _actionBuilder;
+		static arguments_list _instr_tags;
+		static Action_fields_builder _actionBuilder;
 	public:  
-		Instruction_fields_builder();
-		~Instruction_fields_builder();
-		
-		Instruction* construct_instruction(const request_arguments& );
-		const arguments_list& get_instr_args() const;
+		static Instruction* construct_instruction(const json_object*, Instruction* );
+		static arguments_list get_instr_args();
   };
   
 	
@@ -57,7 +50,7 @@ namespace vigil
   {
 	public:
 		
-		struct ofl_msg_header * request_msg_creator(const request_arguments& );
+		struct ofl_msg_header * request_msg_creator(const interact_args& );
 		bool is_modify() const;
 		static builder_name name(); 
 		
@@ -69,7 +62,7 @@ namespace vigil
 	public:
 		Inter_sw_config_setter();
 		
-		struct ofl_msg_header * request_msg_creator(const request_arguments& );
+		struct ofl_msg_header * request_msg_creator(const interact_args& );
 		bool is_modify() const;
 		static builder_name name();
 		
@@ -80,7 +73,7 @@ namespace vigil
   {
 	  public:
 		
-		struct ofl_msg_header * request_msg_creator(const request_arguments& );
+		struct ofl_msg_header * request_msg_creator(const interact_args& );
 		bool is_modify() const;
 		static builder_name name(); 
 		
@@ -92,29 +85,30 @@ namespace vigil
   {
 	  public:
 		
-		struct ofl_msg_header * request_msg_creator(const request_arguments& );
+		struct ofl_msg_header * request_msg_creator(const interact_args& );
 		bool is_modify() const;
 		static builder_name name(); 
 		
 		virtual ~Inter_table_features() {};
   };
 
+ 
   class Inter_desc : public Interactor
   {
 	  public:
 		
-		struct ofl_msg_header * request_msg_creator(const request_arguments& );
+		struct ofl_msg_header * request_msg_creator(const interact_args& );
 		bool is_modify() const;
 		static builder_name name(); 
 		
 		virtual ~Inter_desc() {};
   };
-  
+	
   class Inter_table_stats : public Interactor
   {
 	  public:
 		
-		struct ofl_msg_header * request_msg_creator(const request_arguments& );
+		struct ofl_msg_header * request_msg_creator(const interact_args& );
 		bool is_modify() const;
 		static builder_name name(); 
 		
@@ -126,13 +120,13 @@ namespace vigil
 	public:
 		Inter_flow_info();
 		
-		struct ofl_msg_header * request_msg_creator(const request_arguments& );
+		struct ofl_msg_header * request_msg_creator(const interact_args& );
 		bool is_modify() const;
 		static builder_name name(); 
 		
 		virtual ~Inter_flow_info() {};
   };
-  
+  /*
   class Inter_flow_agr_info : public Interactor
   {
 	public:
@@ -144,19 +138,19 @@ namespace vigil
 		
 		virtual ~Inter_flow_agr_info() {};
   };
-  
+  */
   class Inter_flow_mod : public Interactor
   {
 	public:
 		Inter_flow_mod();
 		
-		struct ofl_msg_header * request_msg_creator(const request_arguments& );
+		struct ofl_msg_header * request_msg_creator(const interact_args& );
 		bool is_modify() const;
 		static builder_name name(); 
 		
 		virtual ~Inter_flow_mod() {};
   };
-  
+  /*
   class Inter_port_stats: public Interactor
   {
 	public:
@@ -307,7 +301,7 @@ namespace vigil
 		static builder_name name(); 
 		
 		virtual ~Inter_meter_mod() {};
-  };
+  };*/
 };
 
 #endif

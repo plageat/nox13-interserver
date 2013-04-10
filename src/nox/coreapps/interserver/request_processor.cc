@@ -37,7 +37,7 @@ namespace vigil
 		if(!id)
 			throw http_request_error("POST data containes invalid dpid value\n",e_bad_request);
 		
-		delete t;
+	//	delete t;
 		
 		return datapathid::from_host(id);
 	}
@@ -56,7 +56,7 @@ namespace vigil
 			
 		std::string str_t = t->get_string(true);
 		
-		delete t;
+		//delete t;
 		
 		type_saver::iterator i;
 		
@@ -65,56 +65,91 @@ namespace vigil
 
 		return *i;
 	}
-	
+	/*
 	request_arguments Request_processor::find_args(json_object* jobj ,const std::vector<std::string>& keys,
-																		const std::vector<std::string>& addit_keys)
+																		const std::vector<std::string>& addit_keys,
+																		const std::string& prev_mark)
 	{
+		static int syn;
+		if(prev_mark == "")
+			syn = 0;
+		
+		int this_level = syn;
+
+		
+		Interact_marker marker;
 		request_arguments args;
-		json_object* t = NULL;
-		std::string th_msg;	// for exception
+		json_object* t = NULL; 
 		std::string value;
+		std::string key,tmp;
+		int mark_future = syn;
 		
-		std::vector<std::string>::const_iterator i1 = keys.begin();
-		std::vector<std::string>::const_iterator i2 = keys.end();
-
+		std::vector<std::string> all_keys = keys;
+		all_keys.insert(all_keys.end(),addit_keys.begin(),addit_keys.end());
+		
+		std::vector<std::string>::const_iterator i1 = all_keys.begin();
+		std::vector<std::string>::const_iterator i2 = all_keys.end();	
 		for(i1; i1 != i2; ++i1)
 		{
+			//std::cout <<  "Current iterator value is "<< *i1<< std::endl;
+			// if processed skip
+			if( args.find(*i1) != args.end() )
+				continue;
+			
+			//std::cout <<  "Current iterator value is "<< *i1<< std::endl;
+			//std::cout << jobj->get_string(true) << std::endl;
 			t = json::get_dict_value(jobj,*i1);
-			 
-			if(t == NULL)
+
+			if( t == NULL )
+				continue;
+					
+			value = t->get_string(true);
+			// check if value is JSON object
+			std::cout <<  "Check if value is JSON: "<< value << std::endl;
+			ssize_t len = value.size();
+			json_object* a = new json_object((const uint8_t*)value.c_str(),len);
+			if(a->type == json_object::JSONT_NULL)
 			{
-				th_msg += *i1;
-				th_msg += '\n';
-				continue;
+				std::cout << "Adding next info: " <<  *i1 << " : " << value << std::endl;
+				key = marker.construct_marked(*i1,this_level,prev_mark);
+				args[key] = value; // if not JSON, add to ret list
 			}
-			value = t->get_string(true);
-			args[*i1] = value;
-		}
-		
-		if(!th_msg.empty())
-		{
-			std::string s("Missing next fields in POST request:\n");
-			s += th_msg;
-			throw http_request_error( s.c_str() ,e_bad_request);
-		}
-		// additional arguments processing
-		i1 = addit_keys.begin();
-		i2 = addit_keys.end();
-
-		for(i1; i1 != i2; ++i1)
-		{
-			t = json::get_dict_value(jobj,*i1);
-			 
-			if(t == NULL)
-				continue;
+			else 
+			{
+				std::cout << "***Is JSON" << std::endl;
 				
-			value = t->get_string(true);
-			args[*i1] = value;
+				tmp = marker.get_marker(this_level,prev_mark);
+				key = marker.construct_marked(*i1,syn + 1,tmp);
+				
+				args[key] = "ok"; // or somelike
+				
+				//Checking if array
+				if(a->type == json_object::JSONT_ARRAY)
+				{
+					lg.dbg("Is array, special handling...");
+					json_array *ar = (json_array*)a->object;
+					json_array::iterator i1 = ar->begin();
+					json_array::iterator i2 = ar->end();
+					for(i1; i1 != i2; ++i1)
+					{
+						++syn;
+						request_arguments args2 = find_args(*i1,keys,addit_keys,tmp);
+						args.insert(args2.begin(),args2.end());
+					}
+				}
+				else
+				{
+					++syn;
+					request_arguments args2 = find_args(a,keys,addit_keys,tmp);
+					args.insert(args2.begin(),args2.end());
+				}
+			}
+			delete a;
 		}
-		
-	
+
 		return args;
-	}
+	}*/
+	
 	// if dpid is not present , generates exception
 	void Request_processor::dpid_check(const datapathid& id)
 	{
@@ -149,7 +184,7 @@ namespace vigil
 				std::string post_data = me.get_request()._post_data;
 				ssize_t len = post_data.size();
 			
-				json_object* a = new json_object((const uint8_t*)post_data.c_str(),len);
+				boost::shared_ptr<json_object> a( new json_object((const uint8_t*)post_data.c_str(),len) );
 				if(a->type == json_object::JSONT_NULL)
 					throw http_request_error("Invalid POST data format, must be JSON\n",e_bad_request);
 				
@@ -157,22 +192,17 @@ namespace vigil
 			
 				this->resolve(reslv);
 				
-				tp = interpret_type(a);
+				tp = interpret_type(a.get());
 				// step 1
 				bool inited = reslv->init_interactor(tp);
 				if(!inited)
 					http_request_error("Requested type is not curretly supported by Interserver\n" ,e_not_supported);
 				// step 2
-				std::vector<std::string> keys = reslv->give_arguments();
-				std::vector<std::string> addit_keys = reslv->give_additional_args();
-				request_arguments args;
-				args = find_args(a,keys,addit_keys);
-				// step 3
 				bool mod_req = reslv->is_modify();
-				// step 4
-				datapathid did = interpret_dpid(a);
+				// step 3
+				datapathid did = interpret_dpid(a.get());
 				dpid_check(did);
-				int sendGood = reslv->resolve_request(did,args);
+				int sendGood = reslv->resolve_request(did,a);
 				if(sendGood != 0)
 				{
 					throw http_request_error("nox_core sending interactor msg error\n",e_internal_server_error);

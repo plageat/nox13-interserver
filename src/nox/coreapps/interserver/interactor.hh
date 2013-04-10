@@ -105,7 +105,7 @@ namespace vigil
 	protected:
 		arguments_list _args;
 		arguments_list _addit_args;
-		
+		/*
 		virtual void check_args(const request_arguments& a)
 		{
 			//function for optimization
@@ -176,10 +176,11 @@ namespace vigil
 				};
 			}
 			
-		}
+		}*/
 		
 	public:
 		// which arg-s must be in request?
+		/*
 		virtual std::vector<std::string> arg_requires() 
 		{
 			std::vector<std::string> a;
@@ -191,8 +192,9 @@ namespace vigil
 			}
 			
 			return a;
-		};
+		};*/
 		// additional optional arguments
+		/*
 		virtual std::vector<std::string> additional_args()
 		{
 			std::vector<std::string> a;
@@ -204,9 +206,9 @@ namespace vigil
 			}
 			
 			return a;
-		};
+		};*/
 		
-		virtual  struct ofl_msg_header * request_msg_creator(const request_arguments& ) = 0;
+		virtual  struct ofl_msg_header * request_msg_creator(const boost::shared_ptr<json_object>& ) = 0;
 		// must return true if it is modify OpenFlow request 
 		virtual bool is_modify() const = 0;
 		
@@ -218,6 +220,8 @@ namespace vigil
 		virtual ~Interactor() {};
 	
   };
+  
+  typedef boost::shared_ptr<json_object> interact_args;
   
   template< class AbstractObj, typename Identifier, typename Creator >
   class cl_factory : boost::noncopyable

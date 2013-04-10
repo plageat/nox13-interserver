@@ -43,7 +43,8 @@ namespace vigil
 		
 		std::string interpret_type(json_object*);	
 		datapathid interpret_dpid(json_object*);	
-		request_arguments find_args(json_object*, const std::vector<std::string>&, const std::vector<std::string>&);
+		//request_arguments find_args(json_object*, const std::vector<std::string>&, 
+			//							const std::vector<std::string>&,const std::string& = "");
   };
   
 };

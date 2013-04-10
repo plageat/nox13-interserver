@@ -15,638 +15,715 @@
 #include "flow.hh"
 #include <stdexcept>
 #include "boost/assign.hpp"
+#include "json-util.hh"	
 	
-	
+#define FIND_AVALUE(args, s)  ( (json::get_dict_value( (args), (s) )->get_string(true) ).c_str() )
+#define EXISTS_AKEY(args, s) ( ( json::get_dict_value( (args), (s) ) ) != NULL )	
+#define FIND_IF_EXISTS_ALL(args,s,key,value) ( ( EXISTS_AKEY( (args) ,(s)) )  &&  \
+		( (value) = FIND_AVALUE( (args), (s) ), (key) = (s), true ) )
+#define FIND_IF_EXISTS(args,s,value) ( ( EXISTS_AKEY( (args) ,(s)) )  &&  \
+		( (value) = FIND_AVALUE( (args), (s) ), true ) )
+
+//#define FIND_IF_EXISTS(args,s,key,value) ( ( (json_object* tmp17_df = json::get_dict_value( (args).get(), (s) ) ) \
+	//										!= NULL ) &&  ( ( (value) = tmp17_df->get_string(true).c_str() ), \
+			//								(key) = (s),  true  ) ) ) 
+
 namespace vigil
 {	
 	using namespace vigil::container;    
 	using namespace std;
  
-	static Vlog_module lg("inter_sw_config");
+	static Vlog_module lg("inter_builders");
 	
-	namespace 
+	
+	typedef std::map<std::string,std::pair<int,int> > match_hash;
+	
+	namespace
 	{
-		Match_fields_builder matchBuilder;
-		Action_fields_builder actionBuilder;
-		Instruction_fields_builder instrBuilder;
-	
-	}
-	
-	typedef std::map<std::string,std::pair<int,int> > matchs_hash;
-	
-	Action_fields_builder::Action_fields_builder()
-	{
-		_action_tags = boost::assign::map_list_of ("action_type",e_String)("act_out_port",e_String)
-						("act_queue_id",e_Num)("act_group_id",e_Num)("tag_type",e_String)
-						("ethertype",e_Num)("ttl_action",e_String)("ttl",e_Num)("ttl_type",e_String);
-	
-		std::string tag;
-		BOOST_FOREACH(const matchs_hash::value_type& p, fields)
+		arguments_list construct_action_tags_ext()
 		{
-			tag.clear();
-			tag += "act_";
-			tag += p.first;
+			arguments_list action_tags;
 			
-			switch(p.second.first)
+			BOOST_FOREACH(const match_hash::value_type& p, fields)
 			{
-				case OXM_OF_IPV4_SRC:
-				case OXM_OF_IPV4_DST:
+				switch(p.second.first)
 				{
-					_action_tags.push_back( std::pair<std::string, enum e_arg_type_t>(tag,e_Ipv4) );
-					break;
+					case OXM_OF_IPV4_SRC:
+					case OXM_OF_IPV4_DST:
+					{
+						action_tags.push_back( std::pair<std::string, enum e_arg_type_t>(p.first,e_Ipv4) );
+						action_tags.push_back( std::pair<std::string, enum e_arg_type_t>(p.first + "_mask",e_Ipv4) );
+						break;
+					};
+					case OXM_OF_ETH_SRC:
+					case OXM_OF_ETH_DST:
+					{
+						action_tags.push_back( std::pair<std::string, enum e_arg_type_t>(p.first,e_MAC) );
+						action_tags.push_back( std::pair<std::string, enum e_arg_type_t>(p.first + "_mask",e_MAC) );
+						break;
+					}
+					case OXM_OF_IPV6_SRC:
+					case OXM_OF_IPV6_DST:
+					case OXM_OF_IPV6_ND_TARGET:
+					case OXM_OF_IPV6_ND_TLL:
+					case OXM_OF_IPV6_ND_SLL:
+					{
+						action_tags.push_back( std::pair<std::string, enum e_arg_type_t>(p.first,e_Ipv6) );
+						action_tags.push_back( std::pair<std::string, enum e_arg_type_t>(p.first + "_mask",e_Ipv6) );
+						break;
+					}
+					default:
+					{
+						action_tags.push_back( std::pair<std::string, enum e_arg_type_t>(p.first,e_Num) );
+						action_tags.push_back( std::pair<std::string, enum e_arg_type_t>(p.first + "_mask",e_Num) );
+						break;
+					}
 				};
-				case OXM_OF_METADATA:
-				{
-					_action_tags.push_back( std::pair<std::string, enum e_arg_type_t>(tag,e_String) );
-					break;
-				}
-				case OXM_OF_ETH_SRC:
-				case OXM_OF_ETH_DST:
-				{
-					_action_tags.push_back( std::pair<std::string, enum e_arg_type_t>(tag,e_MAC) );
-					break;
-				}
-				case OXM_OF_IPV6_SRC:
-				case OXM_OF_IPV6_DST:
-				case OXM_OF_IPV6_ND_TARGET:
-				case OXM_OF_IPV6_ND_TLL:
-				case OXM_OF_IPV6_ND_SLL:
-				{
-					_action_tags.push_back( std::pair<std::string, enum e_arg_type_t>(tag,e_Ipv6) );
-					break;
-				}
-				default:
-				{
-					_action_tags.push_back( std::pair<std::string, enum e_arg_type_t>(tag,e_Num) );
-					break;
-				}
-			};
+			}
 			
+			return action_tags;
 		}
 	}
 	
-	Action_fields_builder::~Action_fields_builder()
-	{
-		
-	}
+	arguments_list Action_fields_builder::_action_tags = boost::assign::map_list_of ("actions_set",e_String)("act_out_port",e_String)
+						("act_queue_id",e_Num)("act_group_id",e_Num)("tag_type",e_String)
+						("ethertype",e_Num)("ttl_action",e_String)("ttl",e_Num)("ttl_type",e_String)
+						("action_type",e_String);
 	
-	const arguments_list& Action_fields_builder::get_action_args() const
+	arguments_list Action_fields_builder::_action_tags_ext = construct_action_tags_ext();
+	
+	
+	arguments_list Action_fields_builder::get_action_args()
 	{
+		arguments_list ret_val = _action_tags;
+		ret_val.insert( ret_val.end(), _action_tags_ext.begin(), _action_tags_ext.end() );
+		
 		return _action_tags;
 	}
 	
-	Actions* Action_fields_builder::construct_action(const request_arguments& args)
+	Actions* Action_fields_builder::construct_action(const json_object* args, Actions* acts)
 	{
-		// this logic for installing one action from one transaction
-		Actions * acts = new Actions();
-	
-		request_arguments::const_iterator i = args.find("action_type");
-		if(i == args.end())
-			throw std::runtime_error("missing action_type field\n");
+		std::cout << "Entering construct actions..."<< std::endl;
 		
-		if(i->second == "output" )
+		std::string key,value,value_mask;
+
+		if( FIND_IF_EXISTS(args,"action_type",value) == false )
+			throw std::runtime_error("missing action_type field\n");
+			
+		if( value == "output" )
 		{
-			request_arguments::const_iterator a_out_port = args.find("act_out_port");
-			if( a_out_port == args.end() )
-				throw std::runtime_error("missing act_out_port argument!\n");
+			if( FIND_IF_EXISTS(args,"out_port",value) == false )
+				throw std::runtime_error("missing out_port argument in action output!\n");
 			
 			uint32_t port = 0;
 			
-			if(a_out_port->second == "in_port" )
-				port = OFPP_IN_PORT;
-			else if(a_out_port->second == "table")
-				port = OFPP_TABLE;
-			else if(a_out_port->second == "normal")
-				port = OFPP_NORMAL;
-			else if(a_out_port->second == "flood")
-				port = OFPP_FLOOD;
-			else if(a_out_port->second == "controller")
-				port = OFPP_CONTROLLER;
-			else if(a_out_port->second == "local")
-				port = OFPP_LOCAL;
+			if( value == "in_port" )
+					port = OFPP_IN_PORT;
+			else if( value == "table" )
+					port = OFPP_TABLE;
+			else if( value == "normal" )
+					port = OFPP_NORMAL;
+			else if( value == "flood" )
+					port = OFPP_FLOOD;
+			else if( value == "controller" )
+					port = OFPP_CONTROLLER;
+			else if( value == "local" )
+					port = OFPP_LOCAL;
 			else
-				port = (uint32_t) atoi( a_out_port->second.c_str() );
+				port = (uint32_t) atoi( value.c_str() );
 			
 			acts->CreateOutput(port);
-			std::cout << "Create output action to port OK!" <<std::endl;
+			std::cout << "Creating output action to port: OK!" <<std::endl;
+					
 			return acts;
 		}
 		
-		if(i->second == "set_queue" )
+		if( value == "set_queue" )
 		{
-			request_arguments::const_iterator queue_id = args.find("act_queue_id");
-			if( queue_id == args.end() )
-				throw std::runtime_error("missing act_queue_id argument!\n");
-			uint32_t q_id = (uint32_t) atoi( queue_id->second.c_str() );
+			if( FIND_IF_EXISTS(args,"queue_id",value) == false )
+				throw std::runtime_error("missing queue_id argument in action set_queue!\n");
+					
+			uint32_t q_id = (uint32_t) atoi( value.c_str() );
 			
 			acts->CreateSetQueue(q_id);
-			
+					
 			return acts;
 		}
 		
-		if(i->second == "group" )
+		if( value == "group" )
 		{
-			request_arguments::const_iterator i = args.find("act_group_id");
-			if( i == args.end() )
-				throw std::runtime_error("missing act_group_id argument!\n");
-			uint32_t group = (uint32_t) atoi( i->second.c_str() );
+			if( FIND_IF_EXISTS(args,"group_id",value) == false )
+				throw std::runtime_error("missing act_group_id argument in action group!\n");
+					
+			uint32_t group = (uint32_t) atoi( value.c_str() );
 			
 			acts->CreateGroupAction(group);
-			
+					
 			return acts;
 		}
 		
-		if(i->second == "push" )
+		if( value == "push" )
 		{
-			request_arguments::const_iterator i = args.find("tag_type");
-			if( i == args.end() )
-				throw std::runtime_error("missing tag_type argument!\n");
-			request_arguments::const_iterator j = args.find("ethertype");
-			if( j == args.end() )
-				throw std::runtime_error("missing ethertype argument!\n");
+			std::string tt,et;
+			
+			if( FIND_IF_EXISTS(args,"tag_type",tt) == false )
+				throw std::runtime_error("missing tag_type argument in action push!\n");
+					
+			if( FIND_IF_EXISTS(args,"ethertype",et) == false )
+				throw std::runtime_error("missing ethertype argument in action push!\n");
 			
 			enum ofp_action_type type; 
-			uint16_t ethertype = (uint16_t) atoi( j->second.c_str() );
+			uint16_t ethertype = (uint16_t) atoi( et.c_str() );
 			
-			if( i->second == "vlan")
+			if( tt == "vlan")
 				type = OFPAT_PUSH_VLAN;
-			else if(i->second == "mpls")
+			else if(tt == "mpls")
 				type = OFPAT_PUSH_MPLS;
-			else if(i->second == "pbb")
+			else if(tt == "pbb")
 				type = OFPAT_PUSH_PBB;
 			else 
-				throw std::runtime_error("invalid tag_type!\n");
+				throw std::runtime_error("invalid tag_type in action push!\n");
 			
 			acts->CreatePushAction(type,ethertype);
 			
+			std::cout << "Creating push action : OK!" <<std::endl;
+			
 			return acts;
 		}
 		
-		if(i->second == "pop" )
+		if( value == "pop" )
 		{
-			request_arguments::const_iterator i = args.find("tag_type");
-			if( i == args.end() )
-				throw std::runtime_error("missing tag_type argument!\n");
+			std::string tt;
 			
-			if( i->second == "vlan")
+			if( FIND_IF_EXISTS(args,"tag_type",tt) == false )
+				throw std::runtime_error("missing tag_type argument in action pop!\n");
+			
+			if( tt == "vlan")
 				acts->CreatePopVlan();
-			else if(i->second == "mpls")
+			else if(tt == "mpls")
 			{
-				request_arguments::const_iterator j = args.find("ethertype");
-				if( j == args.end() )
-					throw std::runtime_error("missing ethertype argument!\n");
+				std::string et;
+				if( FIND_IF_EXISTS(args,"ethertype",et) == false )
+					throw std::runtime_error("missing ethertype argument in action pop!\n");
 			
-				uint16_t ethertype = (uint16_t) atoi( j->second.c_str() );
+				uint16_t ethertype = (uint16_t) atoi( et.c_str() );
 				acts->CreatePopMpls(ethertype);
 			}
 			else 
-				throw std::runtime_error("invalid tag_type!\n");
+				throw std::runtime_error("invalid tag_type in action pop!\n");
 
 			return acts;
 		}
+		
+		if( value == "change_ttl" )
+		{
+			std::string ta;
+			
+			if( FIND_IF_EXISTS(args,"ttl_action",ta) == false )
+				throw std::runtime_error("missing ttl_action argument in action change ttl!\n");
+			
+			if( ta == "set")
+			{
+				std::string ttl_str;
+				
+				if( FIND_IF_EXISTS(args,"ttl",ttl_str) ==  false )
+					throw std::runtime_error("missing ttl argument in action change ttl!\n");
+				
+				uint8_t ttl = (uint8_t) atoi( ttl_str.c_str() );
+				
+				std::string ttl_type_str;
+				if( FIND_IF_EXISTS(args,"ttl_type",ttl_type_str) == false )
+					throw std::runtime_error("missing ttl_type argument in action change ttl!\n");
+				
+				if( ttl_type_str == "ip" )
+					acts->CreateSetNwTTL(ttl);
+				else if ( ttl_type_str == "mpls" )
+					acts->CreateSetMplsTTL(ttl);
+				else
+					throw std::runtime_error("invalid ttl_type in action chage ttl!\n");
+				
+				return acts;
+			}
+			else if(ta == "decrement")
+			{
+				enum ofp_action_type type;
+				
+				std::string ttl_type_str;
+				if( FIND_IF_EXISTS(args,"ttl_type",ttl_type_str) == false )
+					throw std::runtime_error("missing ttl_type argument in action change ttl!\n");
+				
+				if( ttl_type_str == "ip" )
+					type = OFPAT_DEC_NW_TTL;
+				else if ( ttl_type_str == "mpls" )
+					type = OFPAT_DEC_MPLS_TTL;
+				else
+					throw std::runtime_error("invalid ttl_type in action change ttl!\n");
 
-		if(i->second == "set_field")
+				acts->CreateDecTTL(type);
+				
+				return acts;
+			}
+			else if (ta == "copy")
+			{
+				enum ofp_action_type type;
+				
+				std::string ttl_type_str;
+				if( FIND_IF_EXISTS(args,"ttl_type",ttl_type_str) == false )
+					throw std::runtime_error("missing ttl_type argument in action change ttl!\n");
+				
+				if( ttl_type_str == "in" )
+					type = OFPAT_COPY_TTL_IN;
+				else if (ttl_type_str == "out")
+					type = OFPAT_COPY_TTL_OUT;
+				else
+					throw std::runtime_error("invalid ttl_type in action change ttl!\n");
+
+				acts->CreateCopyTTL(type);
+					
+				return acts;	
+			}
+			else
+				throw std::runtime_error("invalid ttl_action!\n");
+		}
+		
+		
+		if( value == "set_field" )
 		{
 			// :-( 
-			BOOST_FOREACH(const request_arguments::value_type& p, args)
+			
+			if( FIND_IF_EXISTS_ALL(args,"ipv4_src",key,value) || 
+				FIND_IF_EXISTS_ALL(args,"ipv4_dst",key,value) )
 			{
-				if( p.first == "act_ipv4_src" || 
-					p.first == "act_ipv4_dst")
-				{
-					struct in_addr addr;
-					inet_pton(AF_INET,p.second.c_str(),&addr);
-					acts->CreateSetField(p.first.substr(4),&addr);
+				struct in_addr* addr = new in_addr;
+				inet_pton(AF_INET, value.c_str(), addr);
+				acts->CreateSetField(key, addr);
 					
-					continue;
-				}
-				if( p.first == "act_ipv6_src" ||
-					p.first == "act_ipv6_dst" ||
-					p.first == "act_ipv6_nd_target" ||
-					p.first == "act_ipv6_nd_tll" ||
-					p.first == "act_ipv6_nd_sll")
-				{
-					struct in6_addr addr;
-					inet_pton(AF_INET6,p.second.c_str(),&addr);
-					acts->CreateSetField(p.first.substr(4),&addr);
+				return acts;
+			}
+			if( FIND_IF_EXISTS_ALL(args, "ipv6_src", key, value) ||
+				FIND_IF_EXISTS_ALL(args, "ipv6_dst" ,key, value) ||
+				FIND_IF_EXISTS_ALL(args, "ipv6_nd_target", key, value) ||
+				FIND_IF_EXISTS_ALL(args, "ipv6_nd_tll", key, value) ||
+				FIND_IF_EXISTS_ALL(args, "ipv6_nd_sll", key,value) )
+			{
+				struct in6_addr* addr = new in6_addr;
+				inet_pton(AF_INET6, value.c_str(), addr);
+				acts->CreateSetField(key, addr);
 				
-					continue;
-				}
-				if(p.first == "act_eth_dst" ||
-					p.first == "act_eth_src")
-				{	//works? need to check
-					ethernetaddr addr = ethernetaddr(p.second);
-					acts->CreateSetField(p.first.substr(4),addr.octet);
-				
-					continue;
-				}
-				std::string for_size = p.first.substr(4); // delete prefix "act_"
-				matchs_hash::const_iterator it = fields.find( for_size );
-				if( it == fields.end() )
+				return acts;
+			}
+			if( FIND_IF_EXISTS_ALL(args, "eth_dst", key, value) |\
+				FIND_IF_EXISTS_ALL(args, "eth_src", key, value) )
+			{	
+				ethernetaddr* addr = new  ethernetaddr(value);
+				acts->CreateSetField(key, addr->octet);
+				return acts;
+			}
+			
+			BOOST_FOREACH(const arguments_list::value_type& p, _action_tags_ext)
+			{
+				if( FIND_IF_EXISTS_ALL(args, p.first, key, value) == false )
 					continue;
 				else
 				{
+					match_hash::const_iterator it = fields.find( key );
+					
 					switch(it->second.second)
 					{
 						case 1:
 						{
-							uint8_t value = (uint8_t)atoi(p.second.c_str());
-							acts->CreateSetField(for_size,&value);
+							uint8_t* value_b = (uint8_t*)xmalloc( sizeof (uint8_t) ) ;
+							*value_b = (uint8_t)atoi( value.c_str() );
+							acts->CreateSetField(key, value_b);
 						
-							break;
+							return acts;
 						}
 						case 2:
 						{
-							uint16_t value = (uint16_t)atoi(p.second.c_str());
-							acts->CreateSetField(for_size,&value);
-						
-							break;
+							uint16_t* value_b = (uint16_t*)xmalloc( sizeof (uint16_t ) ); 
+							*value_b = (uint16_t)atoi( value.c_str() );
+							acts->CreateSetField(key, value_b);
+							
+							return acts;
 						}
 						case 4:
 						{
-							uint32_t value = (uint32_t)atoi(p.second.c_str());
-							acts->CreateSetField(for_size,&value);
+							uint32_t *value_b = (uint32_t*)xmalloc( sizeof (uint32_t ) ); 
+							*value_b = (uint32_t)atoi( value.c_str() );
+							acts->CreateSetField(key, value_b);
 						
-							break;
+							return acts;
 						}
 						case 8:
 						{
-							uint64_t value = (uint64_t)atoll(p.second.c_str());
-							acts->CreateSetField(for_size,&value);
+							uint64_t* value_b = (uint64_t*)xmalloc( sizeof (uint64_t ) );  
+							*value_b = (uint64_t)atoll( value.c_str() );
+							acts->CreateSetField(key, value_b);
 							
-							continue;
+							return acts;
 						}
 					};
 				}
 			}
-			
-			return acts;
 		}
-		if(i->second == "change_ttl")
-		{
-			request_arguments::const_iterator i = args.find("ttl_action");
-			if( i == args.end() )
-				throw std::runtime_error("missing ttl_action argument!\n");
-			
-			if( i->second == "set")
-			{
-				request_arguments::const_iterator j = args.find("ttl");
-				if( j == args.end() )
-					throw std::runtime_error("missing ttl argument!\n");
-				
-				uint8_t ttl = (uint8_t) atoi( j->second.c_str() );
-				
-				request_arguments::const_iterator c = args.find("ttl_type");
-				if( c == args.end() )
-					throw std::runtime_error("missing ttl_type argument!\n");
-				
-				if( c->second == "ip" )
-					acts->CreateSetNwTTL(ttl);
-				else if (c->second == "mpls")
-					acts->CreateSetMplsTTL(ttl);
-				else
-					throw std::runtime_error("invalid ttl_type!\n");
-			}
-			else if(i->second == "decrement")
-			{
-				enum ofp_action_type type;
-				
-				request_arguments::const_iterator j = args.find("ttl_type");
-				if( j == args.end() )
-					throw std::runtime_error("missing ttl_type argument!\n");
-				
-				if( j->second == "ip" )
-					type = OFPAT_DEC_NW_TTL;
-				else if (j->second == "mpls")
-					type = OFPAT_DEC_MPLS_TTL;
-				else
-					throw std::runtime_error("invalid ttl_type!\n");
-
-				acts->CreateDecTTL(type);
-			}
-	
-			else if (i->second == "copy")
-			{
-				enum ofp_action_type type;
-				
-				request_arguments::const_iterator j = args.find("ttl_type");
-				if( j == args.end() )
-					throw std::runtime_error("missing ttl_type argument!\n");
-				
-				if( j->second == "in" )
-					type = OFPAT_COPY_TTL_IN;
-				else if (j->second == "out")
-					type = OFPAT_COPY_TTL_OUT;
-				else
-					throw std::runtime_error("invalid ttl_type!\n");
-
-				acts->CreateCopyTTL(type);
-			}
-			else
-				throw std::runtime_error("invalid ttl_action!\n");
-
-			return acts;
-		}
-		
 		// empty acts = drop action
+		
 		return acts;
 	}
 	
-	const arguments_list& Instruction_fields_builder::get_instr_args() const
+
+	arguments_list Instruction_fields_builder::_instr_tags = boost::assign::map_list_of ("instr_type",e_String)
+									("goto_id", e_Num) ("metadata",e_Num) ("metadata_mask",e_Num)("meter",e_Num)
+									("action_set",e_String);
+			
+	
+	arguments_list Instruction_fields_builder::get_instr_args()
 	{
+		// todo
+		arguments_list ret_val;
+		ret_val.insert( ret_val.begin(), _instr_tags.begin(), _instr_tags.end() );
+		// instructions includes action tags as them part of instructions
+		//ret_val.insert( ret_val.end(), _actionBuilder::get_action_args().begin(),
+		//								 _actionBuilder::get_action_args().end())
 		return _instr_tags;
 	}
 	
-	Instruction_fields_builder::Instruction_fields_builder()
-	{
-		// possible arguments for instruction
-		
-		_instr_tags = boost::assign::map_list_of ("goto_id", e_Num) ("metadata",e_Num) ("metadata_mask",e_Num)
-				("meter",e_Num);
-		// instructions includes action tags as them part of instructions
-		_instr_tags.insert(_instr_tags.begin(), _actionBuilder.get_action_args().begin(),
-												_actionBuilder.get_action_args().end() );
-	}
 	
-	Instruction_fields_builder::~Instruction_fields_builder()
+	Instruction* Instruction_fields_builder::construct_instruction(const json_object* args, Instruction* instr)
 	{
+		std::cout << "Entering construct instructions..."<< std::endl;
 		
-	}
-	
-	Instruction* Instruction_fields_builder::construct_instruction(const request_arguments& args)
-	{
-		Instruction * instr = new Instruction();
+		std::string value,value_mask;
 		
 		// required argument, must be set in builder constructor
-		request_arguments::const_iterator i = args.find("instr_type");
-		if(i == args.end())
-			throw std::runtime_error("missing instr_type field");
+		if( FIND_IF_EXISTS(args,"instr_type",value) == false)
+			throw std::runtime_error("missing instr_type field\n");
 	
-		if(i->second == "goto_table" )
+		if(value == "goto_table" )
 		{
-			request_arguments::const_iterator table_id = args.find("goto_id");
-			if( table_id == args.end() )
-				throw std::runtime_error("missing go to table id, goto_id argument not found!\n");
-			uint8_t id = (uint8_t) atoi( table_id->second.c_str() );
+			std::cout << "Entering construct goto_table instruction..."<< std::endl;
+
+			if( FIND_IF_EXISTS(args,"goto_id",value) == false )
+				throw std::runtime_error("missing goto_id argument\n");
+		
+			uint8_t id = (uint8_t) atoi( value.c_str() );
 			
 			instr->CreateGoToTable(id);
 			
 			return instr;
 		}
 		
-		if(i->second == "write_metadata")
+		if(value == "write_metadata")
 		{
-			request_arguments::const_iterator metadata = args.find("metadata");
-			if( metadata == args.end() )
+			std::cout << "Entering construct write_metadata instruction..."<< std::endl;
+
+			if( FIND_IF_EXISTS(args,"metadata",value) == false )
 				throw std::runtime_error("missing metadata field");
 				
-			uint64_t md = (uint64_t) atoll( metadata->second.c_str() );
+			uint64_t md = (uint64_t) atoll( value.c_str() );
 			
-			request_arguments::const_iterator metadata_mask = args.find("metadata_mask");
-			
-			if( metadata_mask == args.end() )
+			if( FIND_IF_EXISTS(args,"metadata_mask",value_mask) == false )
 				instr->CreateWriteMetadata(md);
 			else
 			{
-				uint64_t md_mask = (uint64_t) atoll( metadata_mask->second.c_str() );
+				uint64_t md_mask = (uint64_t) atoll( value_mask.c_str() );
 				instr->CreateWriteMetadata(md,md_mask);
 			}
 			
 			return instr;
 		}
 		
-		if( i->second == "write_actions" )
+		if( value == "write_actions" )
 		{
-			instr->CreateWrite( actionBuilder.construct_action(args) );
+			std::cout<< "Calling apply actions" << std::endl;
+			
+			Actions *ac = new Actions();
+			if( FIND_IF_EXISTS(args,"action_set",value) )
+			{
+				ssize_t len = value.size();
+				json_object* a = new json_object((const uint8_t*)value.c_str(),len);
+				json_array* ar = (json_array*)a->object;
+				BOOST_FOREACH(const json_array::value_type& p, *ar)
+				{
+					ac =  Action_fields_builder::construct_action(p,ac);
+				}
+			}
+			instr->CreateWrite( ac );
 			
 			return instr;
 		}
 		
-		if( i->second == "apply_actions" )
+		if( value == "apply_actions" )
 		{
-			instr->CreateApply( actionBuilder.construct_action(args) );
+			std::cout<< "Calling apply actions" << std::endl;
+			
+			Actions *ac = new Actions();
+			if( FIND_IF_EXISTS(args,"action_set",value) )
+			{
+				ssize_t len = value.size();
+				json_object* a = new json_object((const uint8_t*)value.c_str(),len);
+				json_array* ar = (json_array*)a->object;
+				BOOST_FOREACH(const json_array::value_type& p, *ar)
+				{
+					ac =  Action_fields_builder::construct_action(p,ac);
+				}
+			}
+			instr->CreateApply( ac );
 			
 			return instr;
 		}
 		
-		if( i->second == "clear_actions" )
+		if( value == "clear_actions" )
 		{
 			instr->CreateClearActions();
 			
 			return instr;
 		}
 		
-		if( i->second == "meter")
+		if( value == "meter")
 		{
-			request_arguments::const_iterator meter = args.find("meter");
-			if( meter == args.end() )
+			if( FIND_IF_EXISTS(args,"meter",value) == false )
 				throw std::runtime_error("missing meter field");
 				
-			uint32_t id = (uint32_t) atoi( meter->second.c_str() );
+			uint32_t id = (uint32_t) atoi( value.c_str() );
 			
 			instr->CreateMeterInstruction(id);
 			
 			return instr;
 		}
-		
+	
 		return instr;
 	}
 	
-	Match_fields_builder::Match_fields_builder() : _m_header(NULL)
+	
+	namespace
 	{
-		BOOST_FOREACH(const matchs_hash::value_type& p, fields)
+		arguments_list construct_match_tags_ext()
 		{
-			switch(p.second.first)
-			{
-				case OXM_OF_IPV4_SRC:
-				case OXM_OF_IPV4_DST:
-				{
-					_match_tags.push_back( std::pair<std::string, enum e_arg_type_t>(p.first,e_Ipv4) );
-					_match_tags.push_back( std::pair<std::string, enum e_arg_type_t>(p.first + "_mask",e_Ipv4) );
-					break;
-				};
-				case OXM_OF_METADATA:
-				{
-					_match_tags.push_back( std::pair<std::string, enum e_arg_type_t>(p.first,e_String) );
-					_match_tags.push_back( std::pair<std::string, enum e_arg_type_t>(p.first + "_mask",e_String) );
-					break;
-				}
-				case OXM_OF_ETH_SRC:
-				case OXM_OF_ETH_DST:
-				{
-					_match_tags.push_back( std::pair<std::string, enum e_arg_type_t>(p.first,e_MAC) );
-					_match_tags.push_back( std::pair<std::string, enum e_arg_type_t>(p.first + "_mask",e_MAC) );
-					break;
-				}
-				case OXM_OF_IPV6_SRC:
-				case OXM_OF_IPV6_DST:
-				case OXM_OF_IPV6_ND_TARGET:
-				case OXM_OF_IPV6_ND_TLL:
-				case OXM_OF_IPV6_ND_SLL:
-				{
-					_match_tags.push_back( std::pair<std::string, enum e_arg_type_t>(p.first,e_Ipv6) );
-					_match_tags.push_back( std::pair<std::string, enum e_arg_type_t>(p.first + "_mask",e_Ipv6) );
-					break;
-				}
-				default:
-				{
-					_match_tags.push_back( std::pair<std::string, enum e_arg_type_t>(p.first,e_Num) );
-					_match_tags.push_back( std::pair<std::string, enum e_arg_type_t>(p.first + "_mask",e_Num) );
-					break;
-				}
-			};
+			arguments_list match_tags;
 			
+		
+			BOOST_FOREACH(const match_hash::value_type& p, fields)
+			{
+				switch(p.second.first)
+				{
+					case OXM_OF_IPV4_SRC:
+					case OXM_OF_IPV4_DST:
+					case OXM_OF_ETH_SRC:
+					case OXM_OF_ETH_DST:
+					case OXM_OF_IPV6_SRC:
+					case OXM_OF_IPV6_DST:
+					case OXM_OF_IPV6_ND_TARGET:
+					case OXM_OF_IPV6_ND_TLL:
+					case OXM_OF_IPV6_ND_SLL:
+									{ break; }
+					/*
+					case OXM_OF_METADATA:
+					{
+						match_tags.push_back( std::pair<std::string, enum e_arg_type_t>(p.first,e_String) );
+						match_tags.push_back( std::pair<std::string, enum e_arg_type_t>(p.first + "_mask",e_String) );
+						break;
+					}*/
+					default:
+					{
+						match_tags.push_back( std::pair<std::string, enum e_arg_type_t>(p.first,e_Num) );
+						match_tags.push_back( std::pair<std::string, enum e_arg_type_t>(p.first + "_mask",e_Num) );
+						break;
+					}
+				};
+			}
+			
+			return match_tags;
+		}
+		
+		arguments_list construct_match_tags()
+		{
+			arguments_list match_tags;
+		
+			BOOST_FOREACH(const match_hash::value_type& p, fields)
+			{
+				switch(p.second.first)
+				{
+					case OXM_OF_IPV4_SRC:
+					case OXM_OF_IPV4_DST:
+					{
+						match_tags.push_back( std::pair<std::string, enum e_arg_type_t>(p.first,e_Ipv4) );
+						match_tags.push_back( std::pair<std::string, enum e_arg_type_t>(p.first + "_mask",e_Ipv4) );
+						break;
+					};
+					case OXM_OF_ETH_SRC:
+					case OXM_OF_ETH_DST:
+					{
+						match_tags.push_back( std::pair<std::string, enum e_arg_type_t>(p.first,e_MAC) );
+						match_tags.push_back( std::pair<std::string, enum e_arg_type_t>(p.first + "_mask",e_MAC) );
+						break;
+					}
+					case OXM_OF_IPV6_SRC:
+					case OXM_OF_IPV6_DST:
+					case OXM_OF_IPV6_ND_TARGET:
+					case OXM_OF_IPV6_ND_TLL:
+					case OXM_OF_IPV6_ND_SLL:
+					{
+						match_tags.push_back( std::pair<std::string, enum e_arg_type_t>(p.first,e_Ipv6) );
+						match_tags.push_back( std::pair<std::string, enum e_arg_type_t>(p.first + "_mask",e_Ipv6) );
+						break;
+					}
+				};
+				
+			}
+			
+			return match_tags;
 		}
 	}
 	
-	Match_fields_builder::~Match_fields_builder()
+	arguments_list Match_fields_builder::_match_tags = construct_match_tags();
+	arguments_list Match_fields_builder::_match_tags_ext = construct_match_tags_ext();
+	
+	arguments_list Match_fields_builder::get_match_args()
 	{
+		// so slowooooooooowly...todo
+		arguments_list ret_val;
+
+		ret_val.insert(ret_val.end(), _match_tags.begin(),_match_tags.end());
+		ret_val.insert(ret_val.end(), _match_tags_ext.begin(),_match_tags_ext.end());
 		
+		return ret_val;
 	}
 	
-	const arguments_list& Match_fields_builder::get_match_args() const
+	Flow* Match_fields_builder::construct_match(const json_object* args, Flow* f)
 	{
-		return _match_tags;
-	}
-	
-	ofl_match_header* Match_fields_builder::construct_match(const request_arguments& args)
-	{
-		// expected checking arguments
-		_m_header = NULL;
-		
-		Flow *f = new Flow;
-		request_arguments::const_iterator i;
-		// we have problems with maskeble mathes..
-		BOOST_FOREACH(const request_arguments::value_type& p, args)
+		std::cout << "Entering match constructor..." << std::endl;
+		// expecting checked arguments
+		//Flow *f;
+		//if(m)
+		//	f = new Flow((const struct ofl_match*)m);	// this SUPER! bug i thing, look into constructor
+		//else
+		//	f = new Flow();
+		std::string key,value, value_mask;
+		// we have problems with maskeble matches..
+		if( FIND_IF_EXISTS_ALL(args, "ipv4_src", key, value) || 
+			FIND_IF_EXISTS_ALL(args, "ipv4_dst", key, value) )
 		{
-			if( p.first == "ipv4_src" || 
-				p.first == "ipv4_dst")
-			{
-				struct in_addr addr;
-				inet_pton(AF_INET,p.second.c_str(),&addr);
+			struct in_addr addr;
+			inet_pton(AF_INET,value.c_str(),&addr);
 				
-				if( (i = args.find(p.first + "_mask") ) == args.end() )
-					f->Add_Field(p.first,addr);
-				else
-				{
-					std::cout <<"Working masked ip match builder..." << std::endl;
-					std::cout << "Address is: " << p.second<< std::endl;
-					std::cout << "Mask is: " << i->second << std::endl;
-					
-					struct in_addr addr_mask;
-					inet_pton(AF_INET,i->second.c_str(),&addr_mask);
-					f->Add_Field(p.first,addr,addr_mask);
-				}
-				continue;
-			}
-			if( p.first == "ipv6_src" ||
-				p.first == "ipv6_dst" ||
-				p.first == "ipv6_nd_target" ||
-				p.first == "ipv6_nd_tll" ||
-				p.first == "ipv6_nd_sll")
-				{
-					struct in6_addr addr;
-					inet_pton(AF_INET6,p.second.c_str(),&addr);
-					
-					if( (i = args.find(p.first + "_mask") ) == args.end() )
-						f->Add_Field(p.first,addr);
-					else
-					{
-						struct in6_addr addr_mask;
-						inet_pton(AF_INET6,i->second.c_str(),&addr_mask);
-						f->Add_Field(p.first,addr,addr_mask);
-					}
-				
-					continue;
-				}
-			if(p.first == "eth_dst" ||
-				p.first == "eth_src")
-			{
-				
-				if( (i = args.find(p.first + "_mask") ) == args.end() )
-					f->Add_Field(p.first,p.second);
-				else
-					f->Add_Field(p.first,p.second,i->second);
-				continue;
-			}
-			// default
-			// for non adress arguments: ports and which are simple numbers
-			// need determine size correctly for call Add_fields method
-			matchs_hash::const_iterator it = fields.find( p.first );
-			if( it == fields.end() )
-				continue;
+			if( FIND_IF_EXISTS(args, value + "_mask",value_mask)  == false )
+				f->Add_Field(key, addr);
 			else
 			{
+				std::cout <<"Working masked ip match builder..." << std::endl;
+					
+				struct in_addr addr_mask;
+				inet_pton(AF_INET, value_mask.c_str() ,&addr_mask);
+				f->Add_Field(key, addr, addr_mask);
+			}
+		}
+		if( FIND_IF_EXISTS_ALL(args,"ipv6_src",key,value) ||
+			FIND_IF_EXISTS_ALL(args,"ipv6_dst",key,value) ||
+			FIND_IF_EXISTS_ALL(args,"ipv6_nd_target",key,value) ||
+			FIND_IF_EXISTS_ALL(args,"ipv6_nd_tll",key,value) ||
+			FIND_IF_EXISTS_ALL(args,"ipv6_nd_sll",key,value) )
+		{
+			struct in6_addr addr;
+			inet_pton(AF_INET6,value.c_str(),&addr);
+					
+			if( FIND_IF_EXISTS(args,value + "_mask",value_mask) == false )
+				f->Add_Field(key,addr);
+			else
+			{
+				struct in6_addr addr_mask;
+				inet_pton(AF_INET6,value_mask.c_str(),&addr_mask);
+				f->Add_Field(key,addr,addr_mask);
+			}
+		}
+		if( FIND_IF_EXISTS_ALL(args,"eth_dst",key,value) || 
+			FIND_IF_EXISTS_ALL(args,"eth_src",key,value) )
+		{
+			if( FIND_IF_EXISTS(args,value + "_mask",value_mask) == false  )
+				f->Add_Field(key,value);
+			else
+				f->Add_Field(key,value,value_mask);
+		}
+		// default
+		// for non adress arguments: ports and which are simple numbers
+		// need determine size correctly for call Add_fields method
+		
+		BOOST_FOREACH(const arguments_list::value_type p, _match_tags_ext)
+		{
+			if( FIND_IF_EXISTS_ALL(args,p.first,key,value) )
+			{
+				match_hash::const_iterator it = fields.find( key );
+				
 				switch(it->second.second)
 				{
 					case 1:
 					{
-						uint8_t value = (uint8_t)atoi(p.second.c_str());
+						uint8_t value_b = (uint8_t)atoi(value.c_str());
 						
-						if( (i = args.find(p.first + "_mask") ) == args.end() )
-							f->Add_Field(p.first,value);
+						if(  FIND_IF_EXISTS(args,value + "_mask",value_mask) == false  )
+							f->Add_Field(key,value_b);
 						else
 						{
-							uint8_t value_mask = (uint8_t)atoi(i->second.c_str());
-							f->Add_Field(p.first,value,value_mask);
+							uint8_t value_mask_b = (uint8_t)atoi(value_mask.c_str());
+							f->Add_Field(key,value_b,value_mask_b);
 						}
 						
 						break;
 					}
 					case 2:
 					{
-						uint16_t value = (uint16_t)atoi(p.second.c_str());
+						uint16_t value_b = (uint16_t)atoi(value.c_str());
 						
-						if( (i = args.find(p.first + "_mask") ) == args.end() )
-							f->Add_Field(p.first,value);
+						if( FIND_IF_EXISTS(args,value + "_mask",value_mask) == false  )
+							f->Add_Field(key,value_b);
 						else
 						{
-							uint16_t value_mask = (uint16_t)atoi(i->second.c_str());
-							f->Add_Field(p.first,value,value_mask);
+							uint16_t value_mask_b = (uint16_t)atoi(value_mask.c_str());
+							f->Add_Field(key,value_b,value_mask_b);
 						}
 						
 						break;
 					}
 					case 4:
 					{
-						uint32_t value = (uint32_t)atoi(p.second.c_str());
+						uint32_t value_b = (uint32_t)atoi(value.c_str());
 						
-						if( (i = args.find(p.first + "_mask") ) == args.end() )
-							f->Add_Field(p.first,value);
+						if( FIND_IF_EXISTS(args,value + "_mask",value_mask) == false )
+							f->Add_Field(key,value_b);
 						else
 						{
-							uint32_t value_mask = (uint32_t)atoi(i->second.c_str());
-							f->Add_Field(p.first,value,value_mask);
+							uint32_t value_mask_b = (uint32_t)atoi(value_mask.c_str());
+							f->Add_Field(key,value_b,value_mask_b);
 						}
 						
 						break;
 					}
 					case 8:
 					{
-						uint64_t value = (uint64_t)atoll(p.second.c_str());
+						uint64_t value_b = (uint64_t)atoll(value.c_str());
 						
-						if( (i = args.find(p.first + "_mask") ) == args.end() )
-							f->Add_Field(p.first,value);
+						if( FIND_IF_EXISTS(args,value + "_mask",value_mask) == false )
+							f->Add_Field(key,value_b);
 						else
 						{
-							uint64_t value_mask = (uint64_t)atoll(i->second.c_str());
-							f->Add_Field(p.first,value,value_mask);
+							uint64_t value_mask_b = (uint64_t)atoll(value_mask.c_str());
+							f->Add_Field(key,value_b,value_mask_b);
 						}
 						
 						break;
 					}
 				};
 			}
+				
 		}
 		
-		
-		_m_header = (struct ofl_match_header*)&(f->match);
-		return _m_header;
+		return f;
 	}
 	
 	
 	//===========================================================
 	
-	struct ofl_msg_header * Inter_sw_config::request_msg_creator(const request_arguments& args)
+	struct ofl_msg_header * Inter_sw_config::request_msg_creator(const interact_args& args)
 	{
 		struct ofl_msg_header*  msg = new ofl_msg_header;
 		msg->type = OFPT_GET_CONFIG_REQUEST;
@@ -681,17 +758,17 @@ namespace vigil
 		_args.push_back(std::pair<std::string, enum e_arg_type_t>(std::string("max_len"),e_Num) );
 	}
 	
-	struct ofl_msg_header * Inter_sw_config_setter::request_msg_creator(const request_arguments& args)
+	struct ofl_msg_header * Inter_sw_config_setter::request_msg_creator(const interact_args& args)
 	{
-		check_args(args);
+		//check_args(args);
 		
 		struct ofl_msg_set_config*  msg = new ofl_msg_set_config;
 		msg->header.type = OFPT_SET_CONFIG;
 		
 		struct ofl_config  *config = new ofl_config;
-	
-		config->flags = (uint16_t) atoi( args.find("flags")->second.c_str() );
-		config->miss_send_len = (uint16_t) atoi ( args.find("max_len")->second.c_str() );
+		
+		config->flags = (uint16_t) atoi( FIND_AVALUE(args.get(),"flags") );
+		config->miss_send_len = (uint16_t) atoi ( FIND_AVALUE(args.get(),"max_len") );
 		
 		msg->config = config;
 		
@@ -708,7 +785,7 @@ namespace vigil
 		return false;
 	}
 	
-	struct ofl_msg_header * Inter_features_request::request_msg_creator(const request_arguments& args)
+	struct ofl_msg_header * Inter_features_request::request_msg_creator(const interact_args& args)
 	{
 		struct ofl_msg_header*  msg = new ofl_msg_header;
 		msg->type = OFPT_FEATURES_REQUEST;
@@ -727,11 +804,12 @@ namespace vigil
 		return false;
 	}
 		
-	struct ofl_msg_header * Inter_table_features::request_msg_creator(const request_arguments& args)
+	struct ofl_msg_header * Inter_table_features::request_msg_creator(const interact_args& args)
 	{
 		struct ofl_msg_multipart_request_table_features*  msg = new ofl_msg_multipart_request_table_features;
 		msg->header.header.type = OFPT_MULTIPART_REQUEST;
 		msg->header.type = OFPMP_TABLE_FEATURES;
+		// todo
 		msg->tables_num = 0;
 		msg->table_features = 0;
 		
@@ -750,7 +828,7 @@ namespace vigil
 		return false;
 	}
 	
-	struct ofl_msg_header * Inter_desc::request_msg_creator(const request_arguments& args)
+	struct ofl_msg_header * Inter_desc::request_msg_creator(const interact_args& args)
 	{
 		struct ofl_msg_multipart_request_header*  msg = new ofl_msg_multipart_request_header;
 		msg->header.type = OFPT_MULTIPART_REQUEST;
@@ -758,6 +836,7 @@ namespace vigil
 		
 		return (ofl_msg_header*)msg;
 	}
+	
 	//===========================================
 	
 	builder_name Inter_table_stats::name()
@@ -770,7 +849,7 @@ namespace vigil
 		return false;
 	}
 	
-	struct ofl_msg_header * Inter_table_stats::request_msg_creator(const request_arguments& args)
+	struct ofl_msg_header * Inter_table_stats::request_msg_creator(const interact_args& args)
 	{
 		struct ofl_msg_multipart_request_header*  msg = new ofl_msg_multipart_request_header;
 		msg->header.type = OFPT_MULTIPART_REQUEST;
@@ -790,45 +869,69 @@ namespace vigil
 		return false;
 	}
 	
-	struct ofl_msg_header * Inter_flow_info::request_msg_creator(const request_arguments& args)
-	{
-		check_args(args);
-		
-		request_arguments::const_iterator i;
-		
-		struct ofl_msg_multipart_request_flow*  msg = new ofl_msg_multipart_request_flow;
-		msg->header.header.type = OFPT_MULTIPART_REQUEST;
-		msg->header.type = OFPMP_FLOW;
+	struct ofl_msg_header * Inter_flow_info::request_msg_creator(const interact_args& args)
+	{		
+			//check_args(args);
+			
+			std::cout << "Entering flow info builder...\n";
+			std::string value;
 	
-		if( (i = args.find("table_id")) == args.end() )
-			msg->table_id = OFPTT_ALL;
-		else
-			msg->table_id = (uint8_t)atoi(i->second.c_str());
-		if( (i = args.find("out_port") ) == args.end() )
-			msg->out_port = OFPP_ANY;
-		else
-			msg->out_port = (uint32_t)atoi(i->second.c_str());
-		if( (i = args.find("out_group")) == args.end() )
-			msg->out_group = OFPG_ANY;
-		else	
-			msg->out_group = (uint32_t)atoi(i->second.c_str());
-		if( (i = args.find("cookie")) == args.end() )
-			msg->cookie = 0;
-		else
-			msg->cookie = (uint64_t)atoll(i->second.c_str());
-		if( (i = args.find("cookie_mask")) == args.end() )
-			msg->cookie_mask = 0;
-		else
-			msg->cookie_mask = (uint64_t)atoll(i->second.c_str());
-
-		msg->match =  matchBuilder.construct_match(args);
+			struct ofl_msg_multipart_request_flow*  msg = new ofl_msg_multipart_request_flow;
+			msg->header.header.type = OFPT_MULTIPART_REQUEST;
+			msg->header.type = OFPMP_FLOW;
 	
-		return (ofl_msg_header*)msg;
+			if( FIND_IF_EXISTS(args.get(),"table_id",value) )
+				msg->table_id = (uint8_t)atoi( value.c_str() );
+			else
+				msg->table_id = OFPTT_ALL;
+			
+			if( EXISTS_AKEY(args.get(),"out_port") )
+				msg->out_port = (uint32_t)atoi( FIND_AVALUE(args.get(),"out_port") );
+			else
+				msg->out_port = OFPP_ANY;
+			if( EXISTS_AKEY(args.get(),"out_group") )
+				msg->out_group = (uint32_t)atoi( FIND_AVALUE(args.get(),"out_group") );
+			else	
+				msg->out_group = OFPG_ANY;
+			if( EXISTS_AKEY(args.get(),"cookie") )
+				msg->cookie = (uint64_t)atoll( FIND_AVALUE(args.get(),"cookie") );
+			else
+				msg->cookie = 0;
+			if(	EXISTS_AKEY(args.get(),"cookie_mask")  )
+				msg->cookie_mask = (uint64_t)atoll( FIND_AVALUE(args.get(),"cookie_mask") );
+			else
+				msg->cookie_mask = 0;
+			
+			Flow *f = new Flow();
+			// flow info + match set causes switch working error
+			// if switch has values flows for respond ; but sometimes occures
+			if ( FIND_IF_EXISTS(args.get(),"match_set",value) )
+			{
+				ssize_t len = value.size();
+				json_object* a = new json_object((const uint8_t*)value.c_str(),len);
+				json_array* ar = (json_array*)a->object;
+				
+				msg->match = NULL;
+				
+				BOOST_FOREACH(const json_array::value_type& p, *ar)
+				{
+					f =  Match_fields_builder::construct_match(p,f);
+				}
+				msg->match = (struct ofl_match_header*)&(f->match);
+			}
+			else
+			{
+				msg->match = (struct ofl_match_header*)&(f->match);
+			}
+			
+			return (ofl_msg_header*)msg;
+		
 	}
 	
 	Inter_flow_info::Inter_flow_info()
 	{
-		_addit_args = matchBuilder.get_match_args(); 
+		_addit_args = Match_fields_builder::get_match_args(); 
+		_addit_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("match_set"),e_Num) );
 		_addit_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("table_id"),e_Num) );
 		_addit_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("out_port"),e_Num) );
 		_addit_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("out_group"),e_Num) );
@@ -836,7 +939,7 @@ namespace vigil
 		_addit_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("cookie_mask"),e_Num) );
 	}
 		//===========================================
-	
+	/*
 	builder_name Inter_flow_agr_info::name()
 	{		
 		return "agr_flow_info";
@@ -1190,6 +1293,7 @@ namespace vigil
 
 		return (ofl_msg_header*)msg;
 	}
+	*/
 	//======================================
 	
 	builder_name Inter_flow_mod::name() 
@@ -1205,11 +1309,12 @@ namespace vigil
 	Inter_flow_mod::Inter_flow_mod()
 	{
 		_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("command"),e_String) );
-		_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("instr_type"),e_String) );
+		_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("instruction_set"),e_String) );
 		
-		_addit_args = instrBuilder.get_instr_args();
-		_addit_args.insert(_addit_args.end(),matchBuilder.get_match_args().begin(),
-											 matchBuilder.get_match_args().end());
+		//_addit_args = instrBuilder.get_instr_args();
+		arguments_list match_args = Match_fields_builder::get_match_args();
+		_addit_args.insert(_addit_args.end(),match_args.begin(), match_args.end());
+		_addit_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("match_set"),e_String) );
 		_addit_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("cookie"),e_Num) );
 		_addit_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("cookie_mask"),e_Num) );
 		_addit_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("table_id"),e_Num) );
@@ -1222,11 +1327,11 @@ namespace vigil
 		_addit_args.push_back( std::pair<std::string, enum e_arg_type_t>(std::string("out_group"),e_Num) );
 	}
 	
-	struct ofl_msg_header* Inter_flow_mod::request_msg_creator(const request_arguments& args)
+	struct ofl_msg_header* Inter_flow_mod::request_msg_creator(const interact_args& args)
 	{
-		check_args(args);
+		//check_args(args);
 		
-		request_arguments::const_iterator i;
+		std::string value;
 		
 		uint64_t cookie;
 		uint64_t cookie_mask;
@@ -1240,20 +1345,20 @@ namespace vigil
 		uint32_t buffer_id;
 		uint32_t out_group;
 		
-		if( (i = args.find("cookie") ) == args.end() )
+		if( FIND_IF_EXISTS(args.get(),"cookie",value) == false)
 			cookie = 0;
 		else
-			cookie = (uint64_t)atoll( i->second.c_str() );
-		if( (i = args.find("cookie_mask") ) == args.end() )
+			cookie = (uint64_t)atoll( value.c_str() );
+		if( FIND_IF_EXISTS(args.get(),"cookie_mask",value) == false )
 			cookie_mask = 0;
 		else
-			cookie_mask = (uint64_t)atoll( i->second.c_str() );	
-		if( (i = args.find("table_id") ) == args.end() )
+			cookie_mask = (uint64_t)atoll( value.c_str() );	
+		if( FIND_IF_EXISTS(args.get(),"table_id",value) == false )
 			table_id = OFPTT_ALL;
 		else
-			table_id = (uint8_t)atoi(i->second.c_str());
+			table_id = (uint8_t)atoi(value.c_str());
 		
-		std::string command_type = args.find("command")->second;
+		std::string command_type = FIND_AVALUE(args.get(),"command");
 		if(command_type  == "add")
 			command = OFPFC_ADD;
 		else if(command_type == "modify")
@@ -1267,42 +1372,66 @@ namespace vigil
 		else
 			command = OFPFC_DELETE;
 		
-		if( (i = args.find("idle_timeout") ) == args.end() )
+		if( FIND_IF_EXISTS(args.get(),"idle_timeout",value) == false )
 			idle_timeout = 0;
 		else
-			idle_timeout = (uint16_t)atoi(i->second.c_str());
-		if( (i = args.find("hard_timeout") ) == args.end() )
+			idle_timeout = (uint16_t)atoi(value.c_str());
+		if( FIND_IF_EXISTS(args.get(),"hard_timeout",value) == false )
 			hard_timeout = 0;
 		else
-			hard_timeout = (uint16_t)atoi(i->second.c_str());
-		if( (i = args.find("out_port") ) == args.end() )
+			hard_timeout = (uint16_t)atoi(value.c_str());
+		if( FIND_IF_EXISTS(args.get(),"out_port",value) == false )
 			out_port = OFPP_ANY;
 		else
-			out_port = (uint32_t)atoi(i->second.c_str());
-		if( (i = args.find("out_group") ) == args.end())
+			out_port = (uint32_t)atoi(value.c_str());
+		if( FIND_IF_EXISTS(args.get(),"out_group",value) == false)
 			out_group = OFPG_ANY;
 		else	
-			out_group = (uint32_t)atoi(i->second.c_str());
-		if( (i = args.find("flags") ) == args.end())
+			out_group = (uint32_t)atoi(value.c_str());
+		if( FIND_IF_EXISTS(args.get(),"flags",value) == false)
 			flags = 0;
 		else	
-			flags = (uint16_t)atoi(i->second.c_str());
-		if( (i = args.find("priority") ) == args.end())
+			flags = (uint16_t)atoi(value.c_str());
+		if( FIND_IF_EXISTS(args.get(),"priority",value) == false)
 			priority = 0;
 		else	
-			priority = (uint16_t)atoi(i->second.c_str());
-		if( (i = args.find("buffer_id") ) == args.end())
+			priority = (uint16_t)atoi(value.c_str());
+		if( FIND_IF_EXISTS(args.get(),"buffer_id",value) == false)
 			buffer_id = 0;
 		else	
-			buffer_id = (uint32_t)atoi(i->second.c_str());
+			buffer_id = (uint32_t)atoi( value.c_str() );
 		
 		FlowMod *mod = new FlowMod(cookie,cookie_mask, table_id,command, idle_timeout, hard_timeout, priority,
 							buffer_id, out_port, out_group , flags);
-		mod->AddMatch( (struct ofl_match*)matchBuilder.construct_match(args) );
-		mod->AddInstructions( instrBuilder.construct_instruction(args) );
+		// match construction
+		Flow *f = new Flow();
+		if ( FIND_IF_EXISTS(args.get(),"match_set",value) )
+		{
+			ssize_t len = value.size();
+			json_object* a = new json_object((const uint8_t*)value.c_str(),len);
+			json_array* ar = (json_array*)a->object;
+			BOOST_FOREACH(const json_array::value_type& p, *ar)
+			{
+				f =  Match_fields_builder::construct_match(p,f);
+			}
+		}
+		mod->AddMatch(&(f->match));
+		// instruction construction
+		Instruction *i = new Instruction();
+		if ( FIND_IF_EXISTS(args.get(),"instruction_set",value) )
+		{
+			ssize_t len = value.size();
+			json_object* a = new json_object((const uint8_t*)value.c_str(),len);
+			json_array* ar = (json_array*)a->object;
+			BOOST_FOREACH(const json_array::value_type& p, *ar)
+			{
+				i =  Instruction_fields_builder::construct_instruction(p,i);
+			}
+		}
+		mod->AddInstructions(i);
 
 		return (ofl_msg_header*)&mod->fm_msg;
-	}
+	}/*
 		//======================================
 	
 	builder_name Inter_group_mod::name() 
@@ -1566,5 +1695,5 @@ namespace vigil
 		msg->meter_id = meter_id;
 		
 		return (ofl_msg_header*)msg;
-	}
+	}*/
 };

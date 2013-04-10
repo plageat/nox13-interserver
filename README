@@ -1,5 +1,0 @@
-To compile need cpp-netlib (>= 0.9.2) installed in your system.
-
-You can try interserver using following  command:
-
-./nox_core -v -i ptcp:6633 interserver=port=[port_number]

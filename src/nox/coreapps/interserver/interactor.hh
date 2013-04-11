@@ -2,7 +2,7 @@
 #define INTERACTOR_HH__
 
 #include "netinet++/datapathid.hh"
-//#include "ofp-msg-event.hh"
+
 #include "assert.hh"
 #include "vlog.hh"
 #include "nox.hh"
@@ -11,34 +11,29 @@
 #include <boost/foreach.hpp>
 #include <utility>
 #include <boost/shared_ptr.hpp>
-//#include <boost/any.hpp>
 #include <boost/noncopyable.hpp>
 #include <vector>
 #include <string>
 #include "component.hh"
 #include "json-util.hh"
 #include <map>
-#include <boost/lexical_cast.hpp>
+
 #include <algorithm>
+
+#define FIND_AVALUE(args, s)  ( (json::get_dict_value( (args), (s) )->get_string(true) ).c_str() )
+#define EXISTS_AKEY(args, s) ( ( json::get_dict_value( (args), (s) ) ) != NULL )	
+#define FIND_IF_EXISTS_ALL(args,s,key,value) ( ( EXISTS_AKEY( (args) ,(s)) )  &&  \
+		( (value) = FIND_AVALUE( (args), (s) ), (key) = (s), true ) )
+#define FIND_IF_EXISTS(args,s,value) ( ( EXISTS_AKEY( (args) ,(s)) )  &&  \
+		( (value) = FIND_AVALUE( (args), (s) ), true ) )
+
+#define REGISTER_ARG(tag_list, key, type) ( (tag_list).push_back \
+		( std::pair<std::string, enum e_arg_type_t>( (key) , (type) ) ) )
 
 namespace vigil
 {
   using namespace vigil::json;
   using namespace vigil::container;  
-  /*
-  template<typename T>
-  class SimpleSingleton : boost::noncopyable
-  {
-	public:
-		static T& Instance()
-		{
-			static T _obj;
-			return _obj;
-		}
-	private:
-		SimpleSingleton();
-		~SimpleSingleton();
-  };*/
   
   typedef std::map<std::string, std::string> request_arguments;
   
@@ -48,165 +43,27 @@ namespace vigil
 		e_Num,
 		e_Ipv4,
 		e_Ipv6,
-		e_MAC
+		e_MAC,
+		e_JArray
   };
-  namespace 
-  {
-	  // need optimization, mb regex or something like
-  	bool is_valid_number(const std::string& s)
-	{
-		try
-		{
-			boost::lexical_cast<int>(s);
-			
-			return true;
-		}
-		catch(...)
-		{
-			return false;
-		}
-	}
-	
-	bool is_valid_ipv4(const std::string& s)
-	{
-		struct in_addr addr;
-		int ret = inet_pton(AF_INET,s.c_str(),&addr);
-			
-		return ret == 1;
-	}
-	
-	bool is_valid_ipv6(const std::string& s)
-	{
-		struct in6_addr addr;
-		int ret = inet_pton(AF_INET6,s.c_str(),&addr);
-		
-		return ret == 1;
-	}
-	
-	bool is_valid_eth(const std::string& s)
-	{
-		try
-		{
-			ethernetaddr(s);
-			return true;
-		}
-		catch(bad_ethernetaddr_cast& e)
-		{
-			return false;
-		}
-	}
-	
-  }
+
   typedef std::map<std::string, std::string> request_arguments;
   typedef std::vector< std::pair<std::string, enum e_arg_type_t> > arguments_list;
+  typedef boost::shared_ptr<json_object> interact_args;
   // abstract base class for all components in interact request scheme
   class Interactor
   {
 	protected:
 		arguments_list _args;
-		arguments_list _addit_args;
-		/*
-		virtual void check_args(const request_arguments& a)
-		{
-			//function for optimization
-			std::string value;
-			arguments_list l;
-			request_arguments::const_iterator i;
-			
-			l.reserve(_args.size() + _addit_args.size() );
-			l.insert( l.end(),_args.begin(),_args.end() );
-			l.insert( l.end(),_addit_args.begin(),_addit_args.end() );
-			
-			std::pair< std::string, enum e_arg_type_t > p;
-
-			BOOST_FOREACH(p, l)
-			{
-				i = a.find(p.first);
-				if ( i == a.end() )
-					continue;
-					
-				value = i->second;
-				
-				switch(p.second)
-				{
-					case e_Num:
-					{
-						if ( is_valid_number(value) == false )
-						{
-							std::string msg = p.first;
-							msg += " has invalid value!\n";
-							throw std::invalid_argument(msg);
-						}
-						break;
-					};
-					case e_Ipv4:
-					{
-						if ( is_valid_ipv4(value) == false )
-						{
-							std::string msg = p.first;
-							msg += " has invalid ip4 address!\n";
-							throw std::invalid_argument(msg);
-						}
-						break;
-					};
-					case e_Ipv6:
-					{
-						if ( is_valid_ipv6(value) == false )
-						{
-							std::string msg = p.first;
-							msg += " has invalid ip6 address!\n";
-							throw std::invalid_argument(msg);
-						}
-						break;
-					};
-					case e_MAC:
-					{
-						if ( is_valid_eth(value) == false )
-						{
-							std::string msg = p.first;
-							msg += " has invalid MAC address!\n";
-							throw std::invalid_argument(msg);
-						}
-						
-						break;
-					}
-					
-					default:
-						break;
-				};
-			}
-			
-		}*/
+		//arguments_list _addit_args;
 		
 	public:
 		// which arg-s must be in request?
-		/*
-		virtual std::vector<std::string> arg_requires() 
+		
+		const arguments_list& arg_requires() const
 		{
-			std::vector<std::string> a;
-			std::pair< std::string, enum e_arg_type_t > p;
-			
-			BOOST_FOREACH(p, _args)
-			{
-				a.push_back(p.first);
-			}
-			
-			return a;
-		};*/
-		// additional optional arguments
-		/*
-		virtual std::vector<std::string> additional_args()
-		{
-			std::vector<std::string> a;
-			std::pair< std::string, enum e_arg_type_t > p;
-			
-			BOOST_FOREACH(p, _addit_args)
-			{
-				a.push_back(p.first);
-			}
-			
-			return a;
-		};*/
+			return _args;
+		};
 		
 		virtual  struct ofl_msg_header * request_msg_creator(const boost::shared_ptr<json_object>& ) = 0;
 		// must return true if it is modify OpenFlow request 
@@ -220,8 +77,6 @@ namespace vigil
 		virtual ~Interactor() {};
 	
   };
-  
-  typedef boost::shared_ptr<json_object> interact_args;
   
   template< class AbstractObj, typename Identifier, typename Creator >
   class cl_factory : boost::noncopyable

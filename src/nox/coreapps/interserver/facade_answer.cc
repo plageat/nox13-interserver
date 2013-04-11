@@ -330,6 +330,21 @@ namespace vigil
 		return CONTINUE;
 	}
 	
+	Disposition Facade_answer::handle_error(const Event& e)
+	{
+		const Ofp_msg_event& pi = assert_cast<const Ofp_msg_event&>(e);
+		
+		struct ofl_msg_error *repl = (struct ofl_msg_error *)**pi.msg;
+		
+		std::string response = ofl_msg_to_string((struct ofl_msg_header*)repl,NULL );
+
+		response += "\n\n";
+		
+		acceptResponse(response);
+		
+		return CONTINUE;
+	}
+	
 	void Facade_answer::install()
 	{
 		//to add all answers from switch 
@@ -382,6 +397,9 @@ namespace vigil
 			
 		register_handler(Ofp_msg_event::get_name(OFPT_QUEUE_GET_CONFIG_REPLY), 
 							boost::bind(&Facade_answer::handle_queue_config, this, _1) );
+		/*
+		register_handler(Ofp_msg_event::get_name(OFPT_ERROR), 
+							boost::bind(&Facade_answer::handle_error, this, _1) );*/
 	}
 	
 	void Facade_answer::getInstance(const container::Context* ctxt, 

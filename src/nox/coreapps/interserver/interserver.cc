@@ -8,6 +8,9 @@
 #include <boost/bind.hpp>
 #include <stdlib.h>
 #include <stdio.h>	
+
+#define TIMEOUT_MAX 10
+
 namespace vigil
 
 {	
@@ -24,7 +27,7 @@ namespace vigil
 	
 	void http_handler::operator() (server::request const &request, server::response &response) 
 	{
-		lg_lib.dbg("Working url handler");
+		//lg_lib.dbg("Working url handler");
 		
 		Interserver::Request_process_Info *post_info = &Interserver::_rp_info;
 		
@@ -34,7 +37,7 @@ namespace vigil
 		post_info->_http_sync.lock();	
 		post_info->_accept_post = true;		
 		
-		boost::system_time timeout = boost::get_system_time() + boost::posix_time::seconds(10);
+		boost::system_time timeout = boost::get_system_time() + boost::posix_time::seconds(TIMEOUT_MAX);
 		
 		bool ret = post_info->_http_sync.timed_lock(timeout); 
 		std::string res;
@@ -139,9 +142,6 @@ namespace vigil
 		const Http_response_event& me = assert_cast<const Http_response_event&>(e);
 		this->_rp_info._response = me.get_response();
 		this->_rp_info._http_sync.unlock();
-		
-		//lg.dbg("Interserver::response_handler working:");
-		//std::cout << "***Responsed data is: \n" <<  me.get_response() << std::endl;
 		
 		return CONTINUE;
 	}

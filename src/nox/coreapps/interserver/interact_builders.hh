@@ -17,32 +17,29 @@ namespace vigil
   {
 	private:
 		static arguments_list _match_tags;
-		// need 2 list for construct match handling...todo
-		static arguments_list _match_tags_ext;
+		//static arguments_list _match_tags_ext;
 	public:  
 		static Flow* construct_match(const json_object*, Flow* );
-		static arguments_list get_match_args();
+		static const arguments_list& get_match_args();
   };
   
   class Action_fields_builder : boost::noncopyable
   {
 	private:
 		static arguments_list _action_tags;
-		static arguments_list _action_tags_ext;
 	public:
 		
 		static Actions* construct_action(const json_object*, Actions*);
-		static arguments_list get_action_args();
+		static const arguments_list& get_action_args();
   };
 
   class Instruction_fields_builder : boost::noncopyable
   {
 	private:
 		static arguments_list _instr_tags;
-		static Action_fields_builder _actionBuilder; // can be deleted
 	public:  
 		static Instruction* construct_instruction(const json_object*, Instruction* );
-		static arguments_list get_instr_args();
+		static const arguments_list& get_instr_args();
   };
   
   class Bucket_fields_builder : boost::noncopyable
@@ -51,7 +48,7 @@ namespace vigil
 		static arguments_list _bucket_tags;
 	public:  
 		static struct ofl_bucket * construct_bucket(const json_object*, struct ofl_bucket *);
-		static arguments_list get_bucket_args();
+		static const arguments_list& get_bucket_args();
   };
   
   class Meter_band_builder : boost::noncopyable
@@ -60,7 +57,7 @@ namespace vigil
 		static arguments_list _band_tags;
 	public:  
 		static struct ofl_meter_band_header * construct_band(const json_object*);
-		static arguments_list get_band_args();
+		static const arguments_list& get_band_args();
   };
 	
   class Inter_sw_config : public Interactor 

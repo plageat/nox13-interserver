@@ -25,7 +25,7 @@ namespace vigil
 		// something like datapathmem
 		Disposition datapath_join_handler(const Event& e);
 		Disposition datapath_leave_handler(const Event& e);
-		void dpid_check(const datapathid& id);
+		void dpid_check(const datapathid& id) const;
 		
 		void postResponse(Return_msg);
 		
@@ -41,10 +41,8 @@ namespace vigil
 		static void getInstance(const container::Context* ctxt, 
 									vigil::Request_processor*& scpa);
 		
-		std::string interpret_type(json_object*);	
-		datapathid interpret_dpid(json_object*);	
-		//request_arguments find_args(json_object*, const std::vector<std::string>&, 
-			//							const std::vector<std::string>&,const std::string& = "");
+		std::string interpret_type(const json_object*) const;	
+		datapathid interpret_dpid(const json_object*) const;	
   };
   
 };

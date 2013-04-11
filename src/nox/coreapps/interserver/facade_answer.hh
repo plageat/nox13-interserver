@@ -59,6 +59,8 @@ namespace vigil
 		Disposition handle_meter_features(const Event&);
 		
 		Disposition handle_queue_config(const Event&);
+		
+		Disposition handle_error(const Event&);
   };
   
 };

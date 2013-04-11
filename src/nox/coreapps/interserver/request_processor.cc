@@ -24,7 +24,7 @@ namespace vigil
 		post(new Http_response_event(r));
 	}
 	
-	datapathid Request_processor::interpret_dpid(json_object* jobj)
+	datapathid Request_processor::interpret_dpid(const json_object* jobj) const
 	{
 		json_object* t = json::get_dict_value(jobj,std::string("dpid"));
 		if(t == NULL)
@@ -37,14 +37,12 @@ namespace vigil
 		if(!id)
 			throw http_request_error("POST data containes invalid dpid value\n",e_bad_request);
 		
-	//	delete t;
-		
 		return datapathid::from_host(id);
 	}
 	
 	typedef std::vector< std::string> type_saver;
 	// this function analize type of request
-	std::string Request_processor::interpret_type(json_object* jobj)
+	std::string Request_processor::interpret_type(const json_object* jobj) const
 	{
 		// replacing switch / case construction 
 		Msg_resolver* reslv = NULL;
@@ -65,93 +63,9 @@ namespace vigil
 
 		return *i;
 	}
-	/*
-	request_arguments Request_processor::find_args(json_object* jobj ,const std::vector<std::string>& keys,
-																		const std::vector<std::string>& addit_keys,
-																		const std::string& prev_mark)
-	{
-		static int syn;
-		if(prev_mark == "")
-			syn = 0;
-		
-		int this_level = syn;
-
-		
-		Interact_marker marker;
-		request_arguments args;
-		json_object* t = NULL; 
-		std::string value;
-		std::string key,tmp;
-		int mark_future = syn;
-		
-		std::vector<std::string> all_keys = keys;
-		all_keys.insert(all_keys.end(),addit_keys.begin(),addit_keys.end());
-		
-		std::vector<std::string>::const_iterator i1 = all_keys.begin();
-		std::vector<std::string>::const_iterator i2 = all_keys.end();	
-		for(i1; i1 != i2; ++i1)
-		{
-			//std::cout <<  "Current iterator value is "<< *i1<< std::endl;
-			// if processed skip
-			if( args.find(*i1) != args.end() )
-				continue;
-			
-			//std::cout <<  "Current iterator value is "<< *i1<< std::endl;
-			//std::cout << jobj->get_string(true) << std::endl;
-			t = json::get_dict_value(jobj,*i1);
-
-			if( t == NULL )
-				continue;
-					
-			value = t->get_string(true);
-			// check if value is JSON object
-			std::cout <<  "Check if value is JSON: "<< value << std::endl;
-			ssize_t len = value.size();
-			json_object* a = new json_object((const uint8_t*)value.c_str(),len);
-			if(a->type == json_object::JSONT_NULL)
-			{
-				std::cout << "Adding next info: " <<  *i1 << " : " << value << std::endl;
-				key = marker.construct_marked(*i1,this_level,prev_mark);
-				args[key] = value; // if not JSON, add to ret list
-			}
-			else 
-			{
-				std::cout << "***Is JSON" << std::endl;
-				
-				tmp = marker.get_marker(this_level,prev_mark);
-				key = marker.construct_marked(*i1,syn + 1,tmp);
-				
-				args[key] = "ok"; // or somelike
-				
-				//Checking if array
-				if(a->type == json_object::JSONT_ARRAY)
-				{
-					lg.dbg("Is array, special handling...");
-					json_array *ar = (json_array*)a->object;
-					json_array::iterator i1 = ar->begin();
-					json_array::iterator i2 = ar->end();
-					for(i1; i1 != i2; ++i1)
-					{
-						++syn;
-						request_arguments args2 = find_args(*i1,keys,addit_keys,tmp);
-						args.insert(args2.begin(),args2.end());
-					}
-				}
-				else
-				{
-					++syn;
-					request_arguments args2 = find_args(a,keys,addit_keys,tmp);
-					args.insert(args2.begin(),args2.end());
-				}
-			}
-			delete a;
-		}
-
-		return args;
-	}*/
 	
 	// if dpid is not present , generates exception
-	void Request_processor::dpid_check(const datapathid& id)
+	void Request_processor::dpid_check(const datapathid& id) const
 	{
 		if ( _dpids.end() == std::find(_dpids.begin(),_dpids.end(),id) )
 		{
@@ -167,11 +81,9 @@ namespace vigil
 	
 		const Http_request_event& me = assert_cast<const Http_request_event&>(e);
 		
-		lg.dbg("Handling RESTfull request");
+		//lg.dbg("Handling RESTfull request...");
 		
-		me.get_request().debug();
-		
-		//std::string response;
+		//me.get_request().debug();
 		
 		if( me.get_request()._url == "/switches/info" )
 		{
@@ -223,28 +135,7 @@ namespace vigil
 		}
 		else
 			postResponse( Return_msg(std::string("Invalid path for NOX interserver source\n"),e_not_implemented ));
-		/*
-		if( me.get_request()._url == "/switches" && me.get_request()._method == "GET")
-		{
-			lg.dbg("Request for DPIDs info");
-			
-			response += "DPIDs of connected switches are:\n";
-			std::vector<datapathid>::const_iterator i1 = _dpids.begin();
-			std::vector<datapathid>::const_iterator i2 = _dpids.end();
-			if(i1 == i2)
-				response += "there are no connected switches\n";
-			else
-				for(i1; i1 != i2; ++i1)
-				{
-					response += i1->string();
-					response += '\n';
-				} 
-			
-			postResponse(response);
-				
-			return CONTINUE;
-		}
-		*/
+
 		return CONTINUE;
 	}
 	
@@ -260,6 +151,7 @@ namespace vigil
 	Disposition Request_processor::datapath_join_handler(const Event& e)
 	{
 		const Datapath_join_event& info = assert_cast<const Datapath_join_event&>(e);
+		
 		_dpids.push_back(info.dpid);
 		
 		return CONTINUE;
@@ -282,7 +174,6 @@ namespace vigil
 	
 	void Request_processor::install()
 	{
-		//nox::post_event(new Http_request_event(Request_msg())); // works good
 		register_event(Interact_event::static_get_name());
 		
 		register_handler<Http_request_event>

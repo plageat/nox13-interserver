@@ -18,7 +18,8 @@ interserver_la_LDFLAGS = -module -export-dynamic -L/usr/lib
 
 request_processor_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/src/nox -I. 
 request_processor_la_SOURCES = request_processor.cc http_event.cc interact_event.cc
-request_processor_la_LDFLAGS = -module -export-dynamic
+request_processor_la_LIBADD = -lboost_system -lboost_regex -lboost_date_time -lboost_thread -lpthread
+request_processor_la_LDFLAGS = -module -export-dynamic 
 
 msg_resolver_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/src/nox -I. 
 msg_resolver_la_SOURCES = msg_resolver.cc interact_builders.cc 

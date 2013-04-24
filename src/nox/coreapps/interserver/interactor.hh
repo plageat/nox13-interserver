@@ -30,7 +30,7 @@
 #define REGISTER_ARG(tag_list, key, type) ( (tag_list).push_back \
 		( std::pair<std::string, enum e_arg_type_t>( (key) , (type) ) ) )
 
-namespace vigil
+namespace vigil 
 {
   using namespace vigil::json;
   using namespace vigil::container;  

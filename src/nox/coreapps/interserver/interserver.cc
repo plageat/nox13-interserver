@@ -122,13 +122,11 @@ namespace vigil
 	
 	void Interserver::listen_state()
 	{
-		struct timeval wait;	// some recoding?
-		wait.tv_sec = 0;
-		wait.tv_usec = 1;
+		struct timeval wait = {0,1};
 		while(true)
 		{
-			co_timer_wait(wait,NULL);
-			co_block();
+			co_sleep(wait);
+
 			if(_rp_info._accept_post == true)
 			{
 				_rp_info._accept_post = false;

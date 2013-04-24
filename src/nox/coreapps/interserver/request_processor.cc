@@ -11,6 +11,9 @@
 #include "json-util.hh"
 #include <map>
 #include <stdexcept>
+#include <boost/thread.hpp>
+	
+#define WAIT_FOR_REQ 2
 	
 namespace vigil
 {	
@@ -18,10 +21,46 @@ namespace vigil
 	using namespace std;
 	 
 	static Vlog_module lg("request_processor");
+	
+	void Request_processor::auto_set_reply()
+	{
+		struct timeval wait = {0 , 1};
+		struct timeval wait_sleep = {WAIT_FOR_REQ, 0};
+		while(true)
+		{
+			co_sleep(wait);
+			
+			if(_auto_mutex == false)
+				continue;
+			
+			co_sleep(wait_sleep);
 
+			if (_reply_state == true)
+				postResponse( Return_msg(std::string("Accepted\n"),e_ok) );
+				
+			_auto_mutex = false;
+		}
+	}
+	
 	void Request_processor::postResponse(Return_msg r)
 	{
+		if(_reply_state == false)
+			return;
+		_reply_state = false;
+		
 		post(new Http_response_event(r));
+	}
+	
+	bool Request_processor::interpret_checkerror(const json_object* jobj) const
+	{
+		json_object* t = json::get_dict_value(jobj,std::string("checkerror"));
+		if(t == NULL)
+			return false;
+		
+		if( t->get_string(true) == "yes" )
+			return true;
+		
+		return false;
 	}
 	
 	datapathid Request_processor::interpret_dpid(const json_object* jobj) const
@@ -54,8 +93,6 @@ namespace vigil
 			
 		std::string str_t = t->get_string(true);
 		
-		//delete t;
-		
 		type_saver::iterator i;
 		
 		if((i = std::find(type_hash.begin(),type_hash.end(),str_t)) == type_hash.end() )
@@ -79,6 +116,8 @@ namespace vigil
 	Disposition Request_processor::handle_request(const Event& e)
 	{
 	
+		_reply_state = true;
+		
 		const Http_request_event& me = assert_cast<const Http_request_event&>(e);
 		
 		//lg.dbg("Handling RESTfull request...");
@@ -120,8 +159,19 @@ namespace vigil
 					throw http_request_error("nox_core sending interactor msg error\n",e_internal_server_error);
 				}
 				// send reply now if modify request 
-				if(mod_req)
-					postResponse( Return_msg(std::string("Accepted\n"),e_ok) );
+				if( interpret_checkerror( a.get() ) == false)
+				{
+					if(mod_req)
+						postResponse( Return_msg(std::string("Accepted\n"),e_ok) );
+				}
+				else
+				{
+					if(mod_req)
+					{
+						_auto_mutex = true;
+					}
+					std::cout << "handle request after..." << std::endl;
+				}
 			}
 			catch(http_request_error& e)
 			{
@@ -174,6 +224,8 @@ namespace vigil
 	
 	void Request_processor::install()
 	{
+		start(boost::bind(&Request_processor::auto_set_reply, this));
+		
 		register_event(Interact_event::static_get_name());
 		
 		register_handler<Http_request_event>

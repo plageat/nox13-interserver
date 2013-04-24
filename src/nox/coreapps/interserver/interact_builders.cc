@@ -43,7 +43,7 @@ namespace vigil
 			
 			if(s.c_str()[0] == '0' && s.c_str()[1] == 'x')
 			{
-				static char keys1[] = "1234567890xABCDabcd";
+				static char keys1[] = "1234567890xABCDEFabcdef";
 				
 				i = strspn(s.c_str(), keys1);
 			}
@@ -304,7 +304,7 @@ namespace vigil
 		if( value == "group" )
 		{
 			if( FIND_IF_EXISTS(args,"group_id",value) == false )
-				throw std::invalid_argument("missing act_group_id argument in action group!\n");
+				throw std::invalid_argument("missing group_id argument in action group!\n");
 					
 			uint32_t group = (uint32_t) strtonum( value.c_str() );
 			
@@ -431,6 +431,8 @@ namespace vigil
 
 				acts->CreateCopyTTL(type);
 					
+				//std::cout << "Creating copy ttl action succesfully "<< std::endl;
+				//std::cout << "Actions num =  " << acts->act_num << std::endl;
 				return acts;	
 			}
 			else
@@ -527,7 +529,7 @@ namespace vigil
 	//=============================================================================
 
 	arguments_list Instruction_fields_builder::_instr_tags = boost::assign::map_list_of ("instr_type",e_String)
-									("goto_id", e_Num) ("metadata",e_Num) ("metadata_mask",e_Num)("meter",e_Num)
+									("goto_id", e_Num) ("metadata",e_Num) ("metadata_mask",e_Num)("meter_id",e_Num)
 									("action_set",e_JArray);
 			
 	const arguments_list& Instruction_fields_builder::get_instr_args()
@@ -583,7 +585,7 @@ namespace vigil
 		
 		if( value == "write_actions" )
 		{
-			std::cout<< "Calling apply actions" << std::endl;
+			std::cout<< "Calling write actions" << std::endl;
 			
 			Actions *ac = new Actions();
 			if( FIND_IF_EXISTS(args,"action_set",value) )
@@ -596,6 +598,7 @@ namespace vigil
 					ac =  Action_fields_builder::construct_action(p,ac);
 				}
 			}
+			std::cout << "Actions num =  " << ac->act_num << std::endl;
 			instr->CreateWrite( ac );
 			
 			return instr;
@@ -630,8 +633,8 @@ namespace vigil
 		
 		if( value == "meter")
 		{
-			if( FIND_IF_EXISTS(args,"meter",value) == false )
-				throw std::invalid_argument("missing meter field");
+			if( FIND_IF_EXISTS(args,"meter_id",value) == false )
+				throw std::invalid_argument("missing meter_id field");
 				
 			uint32_t id = (uint32_t) strtonum( value.c_str() );
 			
@@ -886,10 +889,8 @@ namespace vigil
 				
 				struct in_addr addr_mask;
 				inet_pton(AF_INET, value_mask.c_str() ,&addr_mask);
-				//std::cout << "Values in hmap : " << f->match.match_fields.n << std::endl;
 				f->Add_Field(key, addr, addr_mask);
-				//std::cout << "Values in hmap : " << f->match.match_fields.n << std::endl;
-				//std::cout << ofl_structs_match_to_string((ofl_match_header*)&f->match,NULL);
+	
 			}
 		}
 		if( FIND_IF_EXISTS_ALL(args,"ipv6_src",key,value) ||
@@ -901,7 +902,7 @@ namespace vigil
 			struct in6_addr addr;
 			inet_pton(AF_INET6,value.c_str(),&addr);
 					
-			if( FIND_IF_EXISTS(args,value + "_mask",value_mask) == false )
+			if( FIND_IF_EXISTS(args,key + "_mask",value_mask) == false )
 				f->Add_Field(key,addr);
 			else
 			{
@@ -913,10 +914,16 @@ namespace vigil
 		if( FIND_IF_EXISTS_ALL(args,"eth_dst",key,value) || 
 			FIND_IF_EXISTS_ALL(args,"eth_src",key,value) )
 		{
-			if( FIND_IF_EXISTS(args,value + "_mask",value_mask) == false  )
+			if( FIND_IF_EXISTS(args,key + "_mask",value_mask) == false  )
+			{
+				std::cout << "Working eth NOT maskeble match builder\n";
 				f->Add_Field(key,value);
+			}
 			else
+			{
+				std::cout << "Working eth maskeble match builder" << value_mask << std::endl;
 				f->Add_Field(key,value,value_mask);
+			}
 		}
 		// default
 		// for non adress arguments: ports and which are simple numbers
@@ -936,7 +943,7 @@ namespace vigil
 					{
 						uint8_t value_b = (uint8_t)strtonum(value.c_str());
 						
-						if(  FIND_IF_EXISTS(args,value + "_mask",value_mask) == false  )
+						if(  FIND_IF_EXISTS(args,key + "_mask",value_mask) == false  )
 							f->Add_Field(key,value_b);
 						else
 						{
@@ -950,7 +957,7 @@ namespace vigil
 					{
 						uint16_t value_b = (uint16_t)strtonum(value.c_str());
 						
-						if( FIND_IF_EXISTS(args,value + "_mask",value_mask) == false  )
+						if( FIND_IF_EXISTS(args,key + "_mask",value_mask) == false  )
 							f->Add_Field(key,value_b);
 						else
 						{
@@ -965,7 +972,7 @@ namespace vigil
 					{
 						uint32_t value_b = (uint32_t)strtonum(value.c_str());
 						
-						if( FIND_IF_EXISTS(args,value + "_mask",value_mask) == false )
+						if( FIND_IF_EXISTS(args,key + "_mask",value_mask) == false )
 							f->Add_Field(key,value_b);
 						else
 						{
@@ -977,10 +984,10 @@ namespace vigil
 					}
 					case 8:
 					{
-						std::cout << "Constructing match 8 byte: " << value << std::endl;
 						uint64_t value_b = (uint64_t)strtonum(value.c_str());
+						std::cout << "Constructing match 8 byte: " << value_b << std::endl;
 						
-						if( FIND_IF_EXISTS(args,value + "_mask",value_mask) == false )
+						if( FIND_IF_EXISTS(args,key + "_mask",value_mask) == false )
 							f->Add_Field(key,value_b);
 						else
 						{

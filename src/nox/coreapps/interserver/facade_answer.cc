@@ -338,7 +338,7 @@ namespace vigil
 		
 		std::string response = ofl_msg_to_string((struct ofl_msg_header*)repl,NULL );
 
-		response += "\n\n";
+		response += "\n";
 		
 		acceptResponse(response);
 		
@@ -391,15 +391,15 @@ namespace vigil
 							
 		register_handler(Ofp_msg_event::get_stats_name(OFPMP_METER_CONFIG), 
 							boost::bind(&Facade_answer::handle_meter_config, this, _1) );
-		// currently not supported				
+		// currently not supported	by switch?			
 		//register_handler(Ofp_msg_event::get_stats_name(OFPMP_METER_FEATURES), 
 			//				boost::bind(&Facade_answer::handle_meter_features, this, _1) );
 			
 		register_handler(Ofp_msg_event::get_name(OFPT_QUEUE_GET_CONFIG_REPLY), 
 							boost::bind(&Facade_answer::handle_queue_config, this, _1) );
-		/*
+		
 		register_handler(Ofp_msg_event::get_name(OFPT_ERROR), 
-							boost::bind(&Facade_answer::handle_error, this, _1) );*/
+							boost::bind(&Facade_answer::handle_error, this, _1) );
 	}
 	
 	void Facade_answer::getInstance(const container::Context* ctxt, 

@@ -12,11 +12,12 @@ namespace vigil
   using namespace vigil::container; 
   
   typedef std::vector<std::string> id_to_type;
+  typedef cl_factory<Interactor, std::string , boost::function< Interactor* () > > builers_factory;
   
   class Msg_resolver : public Component
   {
 	  private:
-		cl_factory<Interactor, std::string , boost::function< Interactor* () > > _interactsFact;
+		builers_factory _interactsFact;
 		id_to_type _res_ids;
 		boost::shared_ptr<Interactor> _temp_ptr;
 		
@@ -38,8 +39,8 @@ namespace vigil
 		
 		// msg_resolver main logic
 		bool init_interactor(const std::string&);	// must be call first!
-		std::vector<std::string> give_arguments() const;
-		std::vector<std::string> give_additional_args() const;
+		//std::vector<std::string> give_arguments() const;
+		//std::vector<std::string> give_additional_args() const;
 		bool is_modify() const;
 		int resolve_request(const datapathid& did, const boost::shared_ptr<json_object>&);	// must be call last!
 		

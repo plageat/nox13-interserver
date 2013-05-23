@@ -16,7 +16,7 @@ namespace vigil
 	std::string _url;
 	//std::string _method;
 	//std::string _version;
-	std::string _post_data;
+	std::string _data;
 	
 	void debug() const;
 	

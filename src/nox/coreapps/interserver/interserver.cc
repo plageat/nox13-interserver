@@ -32,7 +32,7 @@ namespace vigil
 		Interserver::Request_process_Info *post_info = &Interserver::_rp_info;
 		
 		post_info->_request_msg._url = destination(request);
-		post_info->_request_msg._post_data = body(request);
+		post_info->_request_msg._data = body(request);
 		
 		post_info->_http_sync.lock();	
 		post_info->_accept_post = true;		

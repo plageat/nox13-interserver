@@ -81,13 +81,13 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-facade_answer_la_LIBADD =
-am_facade_answer_la_OBJECTS = facade_answer_la-facade_answer.lo \
-	facade_answer_la-interact_event.lo
-facade_answer_la_OBJECTS = $(am_facade_answer_la_OBJECTS)
-facade_answer_la_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
+interact_answer_la_LIBADD =
+am_interact_answer_la_OBJECTS = interact_answer_la-interact_answer.lo \
+	interact_answer_la-interact_reply_event.lo
+interact_answer_la_OBJECTS = $(am_interact_answer_la_OBJECTS)
+interact_answer_la_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(AM_CXXFLAGS) \
-	$(CXXFLAGS) $(facade_answer_la_LDFLAGS) $(LDFLAGS) -o $@
+	$(CXXFLAGS) $(interact_answer_la_LDFLAGS) $(LDFLAGS) -o $@
 interserver_la_DEPENDENCIES =
 am_interserver_la_OBJECTS = interserver_la-interserver.lo \
 	interserver_la-http_event.lo
@@ -102,11 +102,11 @@ msg_resolver_la_OBJECTS = $(am_msg_resolver_la_OBJECTS)
 msg_resolver_la_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(AM_CXXFLAGS) \
 	$(CXXFLAGS) $(msg_resolver_la_LDFLAGS) $(LDFLAGS) -o $@
-request_processor_la_DEPENDENCIES =
+request_processor_la_LIBADD =
 am_request_processor_la_OBJECTS =  \
 	request_processor_la-request_processor.lo \
 	request_processor_la-http_event.lo \
-	request_processor_la-interact_event.lo
+	request_processor_la-interact_reply_event.lo
 request_processor_la_OBJECTS = $(am_request_processor_la_OBJECTS)
 request_processor_la_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(AM_CXXFLAGS) \
@@ -124,9 +124,9 @@ CXXLD = $(CXX)
 CXXLINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(facade_answer_la_SOURCES) $(interserver_la_SOURCES) \
+SOURCES = $(interact_answer_la_SOURCES) $(interserver_la_SOURCES) \
 	$(msg_resolver_la_SOURCES) $(request_processor_la_SOURCES)
-DIST_SOURCES = $(facade_answer_la_SOURCES) $(interserver_la_SOURCES) \
+DIST_SOURCES = $(interact_answer_la_SOURCES) $(interserver_la_SOURCES) \
 	$(msg_resolver_la_SOURCES) $(request_processor_la_SOURCES)
 ETAGS = etags
 CTAGS = ctags
@@ -315,22 +315,21 @@ pkglib_LTLIBRARIES = \
 	interserver.la \
 	request_processor.la \
 	msg_resolver.la	\
-	facade_answer.la
+	interact_answer.la
 
 interserver_la_CPPFLAGS = -I/usr/local/include/cpp-netlib  $(AM_CPPFLAGS) -I$(top_srcdir)/src/nox -I. 
 interserver_la_SOURCES = interserver.cc http_event.cc
 interserver_la_LIBADD = -lboost_system -lboost_regex -lboost_date_time -lboost_thread -lpthread
 interserver_la_LDFLAGS = -module -export-dynamic -L/usr/lib
 request_processor_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/src/nox -I. 
-request_processor_la_SOURCES = request_processor.cc http_event.cc interact_event.cc
-request_processor_la_LIBADD = -lboost_system -lboost_regex -lboost_date_time -lboost_thread -lpthread
+request_processor_la_SOURCES = request_processor.cc http_event.cc interact_reply_event.cc
 request_processor_la_LDFLAGS = -module -export-dynamic 
 msg_resolver_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/src/nox -I. 
 msg_resolver_la_SOURCES = msg_resolver.cc interact_builders.cc 
 msg_resolver_la_LDFLAGS = -module -export-dynamic
-facade_answer_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/src/nox -I. 
-facade_answer_la_SOURCES = facade_answer.cc interact_event.cc
-facade_answer_la_LDFLAGS = -module -export-dynamic
+interact_answer_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/src/nox -I. 
+interact_answer_la_SOURCES = interact_answer.cc interact_reply_event.cc
+interact_answer_la_LDFLAGS = -module -export-dynamic
 NOX_RUNTIMEFILES = meta.json
 all: all-am
 
@@ -398,8 +397,8 @@ clean-pkglibLTLIBRARIES:
 	  echo "rm -f \"$${dir}/so_locations\""; \
 	  rm -f "$${dir}/so_locations"; \
 	done
-facade_answer.la: $(facade_answer_la_OBJECTS) $(facade_answer_la_DEPENDENCIES) $(EXTRA_facade_answer_la_DEPENDENCIES) 
-	$(facade_answer_la_LINK) -rpath $(pkglibdir) $(facade_answer_la_OBJECTS) $(facade_answer_la_LIBADD) $(LIBS)
+interact_answer.la: $(interact_answer_la_OBJECTS) $(interact_answer_la_DEPENDENCIES) $(EXTRA_interact_answer_la_DEPENDENCIES) 
+	$(interact_answer_la_LINK) -rpath $(pkglibdir) $(interact_answer_la_OBJECTS) $(interact_answer_la_LIBADD) $(LIBS)
 interserver.la: $(interserver_la_OBJECTS) $(interserver_la_DEPENDENCIES) $(EXTRA_interserver_la_DEPENDENCIES) 
 	$(interserver_la_LINK) -rpath $(pkglibdir) $(interserver_la_OBJECTS) $(interserver_la_LIBADD) $(LIBS)
 msg_resolver.la: $(msg_resolver_la_OBJECTS) $(msg_resolver_la_DEPENDENCIES) $(EXTRA_msg_resolver_la_DEPENDENCIES) 
@@ -413,14 +412,14 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/facade_answer_la-facade_answer.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/facade_answer_la-interact_event.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/interact_answer_la-interact_answer.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/interact_answer_la-interact_reply_event.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/interserver_la-http_event.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/interserver_la-interserver.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/msg_resolver_la-interact_builders.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/msg_resolver_la-msg_resolver.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/request_processor_la-http_event.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/request_processor_la-interact_event.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/request_processor_la-interact_reply_event.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/request_processor_la-request_processor.Plo@am__quote@
 
 .cc.o:
@@ -444,19 +443,19 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LTCXXCOMPILE) -c -o $@ $<
 
-facade_answer_la-facade_answer.lo: facade_answer.cc
-@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(facade_answer_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT facade_answer_la-facade_answer.lo -MD -MP -MF $(DEPDIR)/facade_answer_la-facade_answer.Tpo -c -o facade_answer_la-facade_answer.lo `test -f 'facade_answer.cc' || echo '$(srcdir)/'`facade_answer.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/facade_answer_la-facade_answer.Tpo $(DEPDIR)/facade_answer_la-facade_answer.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='facade_answer.cc' object='facade_answer_la-facade_answer.lo' libtool=yes @AMDEPBACKSLASH@
+interact_answer_la-interact_answer.lo: interact_answer.cc
+@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(interact_answer_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT interact_answer_la-interact_answer.lo -MD -MP -MF $(DEPDIR)/interact_answer_la-interact_answer.Tpo -c -o interact_answer_la-interact_answer.lo `test -f 'interact_answer.cc' || echo '$(srcdir)/'`interact_answer.cc
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/interact_answer_la-interact_answer.Tpo $(DEPDIR)/interact_answer_la-interact_answer.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='interact_answer.cc' object='interact_answer_la-interact_answer.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(facade_answer_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o facade_answer_la-facade_answer.lo `test -f 'facade_answer.cc' || echo '$(srcdir)/'`facade_answer.cc
+@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(interact_answer_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o interact_answer_la-interact_answer.lo `test -f 'interact_answer.cc' || echo '$(srcdir)/'`interact_answer.cc
 
-facade_answer_la-interact_event.lo: interact_event.cc
-@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(facade_answer_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT facade_answer_la-interact_event.lo -MD -MP -MF $(DEPDIR)/facade_answer_la-interact_event.Tpo -c -o facade_answer_la-interact_event.lo `test -f 'interact_event.cc' || echo '$(srcdir)/'`interact_event.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/facade_answer_la-interact_event.Tpo $(DEPDIR)/facade_answer_la-interact_event.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='interact_event.cc' object='facade_answer_la-interact_event.lo' libtool=yes @AMDEPBACKSLASH@
+interact_answer_la-interact_reply_event.lo: interact_reply_event.cc
+@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(interact_answer_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT interact_answer_la-interact_reply_event.lo -MD -MP -MF $(DEPDIR)/interact_answer_la-interact_reply_event.Tpo -c -o interact_answer_la-interact_reply_event.lo `test -f 'interact_reply_event.cc' || echo '$(srcdir)/'`interact_reply_event.cc
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/interact_answer_la-interact_reply_event.Tpo $(DEPDIR)/interact_answer_la-interact_reply_event.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='interact_reply_event.cc' object='interact_answer_la-interact_reply_event.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(facade_answer_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o facade_answer_la-interact_event.lo `test -f 'interact_event.cc' || echo '$(srcdir)/'`interact_event.cc
+@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(interact_answer_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o interact_answer_la-interact_reply_event.lo `test -f 'interact_reply_event.cc' || echo '$(srcdir)/'`interact_reply_event.cc
 
 interserver_la-interserver.lo: interserver.cc
 @am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(interserver_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT interserver_la-interserver.lo -MD -MP -MF $(DEPDIR)/interserver_la-interserver.Tpo -c -o interserver_la-interserver.lo `test -f 'interserver.cc' || echo '$(srcdir)/'`interserver.cc
@@ -500,12 +499,12 @@ request_processor_la-http_event.lo: http_event.cc
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(request_processor_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o request_processor_la-http_event.lo `test -f 'http_event.cc' || echo '$(srcdir)/'`http_event.cc
 
-request_processor_la-interact_event.lo: interact_event.cc
-@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(request_processor_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT request_processor_la-interact_event.lo -MD -MP -MF $(DEPDIR)/request_processor_la-interact_event.Tpo -c -o request_processor_la-interact_event.lo `test -f 'interact_event.cc' || echo '$(srcdir)/'`interact_event.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/request_processor_la-interact_event.Tpo $(DEPDIR)/request_processor_la-interact_event.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='interact_event.cc' object='request_processor_la-interact_event.lo' libtool=yes @AMDEPBACKSLASH@
+request_processor_la-interact_reply_event.lo: interact_reply_event.cc
+@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(request_processor_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT request_processor_la-interact_reply_event.lo -MD -MP -MF $(DEPDIR)/request_processor_la-interact_reply_event.Tpo -c -o request_processor_la-interact_reply_event.lo `test -f 'interact_reply_event.cc' || echo '$(srcdir)/'`interact_reply_event.cc
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/request_processor_la-interact_reply_event.Tpo $(DEPDIR)/request_processor_la-interact_reply_event.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='interact_reply_event.cc' object='request_processor_la-interact_reply_event.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(request_processor_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o request_processor_la-interact_event.lo `test -f 'interact_event.cc' || echo '$(srcdir)/'`interact_event.cc
+@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(request_processor_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o request_processor_la-interact_reply_event.lo `test -f 'interact_reply_event.cc' || echo '$(srcdir)/'`interact_reply_event.cc
 
 mostlyclean-libtool:
 	-rm -f *.lo

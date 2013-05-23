@@ -58,7 +58,7 @@ namespace vigil
 		//arguments_list _addit_args;
 		
 	public:
-		// which arg-s must be in request?
+		// which arg-s can be in request?
 		
 		const arguments_list& arg_requires() const
 		{

@@ -9,8 +9,8 @@
             "library": "msg_resolver"
 		},
 		{
-			"name": "facade_answer" ,
-            "library": "facade_answer"
+			"name": "interact_answer" ,
+            "library": "interact_answer"
 		},
 		{
             "name": "interserver" ,
@@ -18,7 +18,7 @@
 			"dependencies": [
                 "msg_resolver",
 				"request_processor",
-				"facade_answer"
+				"interact_answer"
             ]
         }
     ]

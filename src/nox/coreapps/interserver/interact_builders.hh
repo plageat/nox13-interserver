@@ -271,7 +271,7 @@ namespace vigil
 		virtual ~Inter_meter_config() {};
   }; 
   
-  // problem of unpacking response...
+  // problem in unpacking response...
   class Inter_meter_features: public Interactor
   {
 	public:

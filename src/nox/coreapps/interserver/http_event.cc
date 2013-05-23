@@ -8,7 +8,7 @@ namespace vigil
 	void Request_msg::debug() const
 	{
 		std::cout << "Url is: "<< _url << std::endl;
-		std::cout << "POST data is: " << _post_data << std::endl;
+		std::cout << "POST data is: " << _data << std::endl;
 	//	std::cout << "Version is: "<< _version << std::endl;
 	//	std::cout << "Method is: "<< _method << std::endl
 	}	
@@ -16,7 +16,7 @@ namespace vigil
 	void Request_msg::clear()
 	{
 		//this->_method.clear();
-		this->_post_data.clear();
+		this->_data.clear();
 		this->_url.clear();
 		//this->_version.clear();
 	}
@@ -66,7 +66,7 @@ namespace vigil
 	}
 
 	http_request_error::~http_request_error() throw()
-	{
+ 	{
 		
 	}
 };	

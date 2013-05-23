@@ -1,6 +1,6 @@
 #include "request_processor.hh"
 
-#include "interact_event.hh"
+#include "interact_reply_event.hh"
 #include <algorithm>
 #include "assert.hh"
 #include "vlog.hh"
@@ -42,7 +42,7 @@ namespace vigil
 		}
 	}
 	
-	void Request_processor::postResponse(Return_msg r)
+	void Request_processor::postResponse(const Return_msg& r)
 	{
 		if(_reply_state == false)
 			return;
@@ -129,13 +129,13 @@ namespace vigil
 			try
 			{
 				std::string tp;
-				if(me.get_request()._post_data.size() == 0)
+				if(me.get_request()._data.size() == 0)
 					throw http_request_error("POST data not found!\n",e_not_found);
 			
-				std::string post_data = me.get_request()._post_data;
-				ssize_t len = post_data.size();
+				std::string data = me.get_request()._data;
+				ssize_t len = data.size();
 			
-				boost::shared_ptr<json_object> a( new json_object((const uint8_t*)post_data.c_str(),len) );
+				boost::shared_ptr<json_object> a( new json_object((const uint8_t*)data.c_str(),len) );
 				if(a->type == json_object::JSONT_NULL)
 					throw http_request_error("Invalid POST data format, must be JSON\n",e_bad_request);
 				
@@ -191,7 +191,7 @@ namespace vigil
 	
 	Disposition Request_processor::handle_reply(const Event& e)
 	{
-		const Interact_event& pi = assert_cast<const Interact_event&>(e);
+		const Interact_reply_event& pi = assert_cast<const Interact_reply_event&>(e);
 		
 		postResponse( Return_msg(pi.get_reply(),e_ok ) );
 		
@@ -226,12 +226,12 @@ namespace vigil
 	{
 		start(boost::bind(&Request_processor::auto_set_reply, this));
 		
-		register_event(Interact_event::static_get_name());
+		register_event(Interact_reply_event::static_get_name());
 		
 		register_handler<Http_request_event>
 			(boost::bind(&Request_processor::handle_request, this, _1));
 			
-		register_handler<Interact_event>
+		register_handler<Interact_reply_event>
 			(boost::bind(&Request_processor::handle_reply,this, _1));
 		
 		register_handler<Datapath_join_event>

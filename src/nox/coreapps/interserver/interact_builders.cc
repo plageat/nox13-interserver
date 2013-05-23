@@ -337,7 +337,7 @@ namespace vigil
 			
 			acts->CreatePushAction(type,ethertype);
 			
-			std::cout << "Creating push action : OK!" <<std::endl;
+			//std::cout << "Creating push action : OK!" <<std::endl;
 			
 			return acts;
 		}
@@ -598,7 +598,7 @@ namespace vigil
 					ac =  Action_fields_builder::construct_action(p,ac);
 				}
 			}
-			std::cout << "Actions num =  " << ac->act_num << std::endl;
+			//std::cout << "Actions num =  " << ac->act_num << std::endl;
 			instr->CreateWrite( ac );
 			
 			return instr;
@@ -815,6 +815,8 @@ namespace vigil
 				{
 					case OXM_OF_IPV4_SRC:
 					case OXM_OF_IPV4_DST:
+					case OXM_OF_ARP_SPA:
+					case OXM_OF_ARP_TPA:
 					{
 						REGISTER_ARG(match_tags, p.first, e_Ipv4);
 						REGISTER_ARG(match_tags, p.first + "_mask", e_Ipv4);
@@ -823,6 +825,8 @@ namespace vigil
 					};
 					case OXM_OF_ETH_SRC:
 					case OXM_OF_ETH_DST:
+					case OXM_OF_ARP_SHA:
+					case OXM_OF_ARP_THA:
 					{
 						REGISTER_ARG(match_tags, p.first, e_MAC);
 						REGISTER_ARG(match_tags, p.first + "_mask", e_MAC);
@@ -832,8 +836,8 @@ namespace vigil
 					case OXM_OF_IPV6_SRC:
 					case OXM_OF_IPV6_DST:
 					case OXM_OF_IPV6_ND_TARGET:
-					case OXM_OF_IPV6_ND_TLL:
-					case OXM_OF_IPV6_ND_SLL:
+					//case OXM_OF_IPV6_ND_TLL:
+					//case OXM_OF_IPV6_ND_SLL:
 					{
 						REGISTER_ARG(match_tags, p.first, e_Ipv6);
 						REGISTER_ARG(match_tags, p.first + "_mask", e_Ipv6);
@@ -1053,13 +1057,15 @@ namespace vigil
 		msg->header.type = OFPT_SET_CONFIG;
 		
 		struct ofl_config  *config = new ofl_config;
-		
+		// leaks...
 		if ( FIND_IF_EXISTS(args.get(),"flags",value)  )
 			config->flags = (uint16_t) strtonum( value.c_str() );
 		else
 			throw std::invalid_argument("missing flags field");
 		if( FIND_IF_EXISTS( args.get(), "max_len", value) )	
 			config->miss_send_len = (uint16_t) strtonum ( value.c_str() );
+		else
+			throw std::invalid_argument("missing max_len field");
 		
 		msg->config = config;
 		
